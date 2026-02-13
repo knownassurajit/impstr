@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.example.imposter.app-merged_res-59:/xml_data_extraction_rules.xml.flat",
+        "source": "com.example.imposter.app-main-61:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.example.imposter.app-merged_res-59:/xml_backup_rules.xml.flat",
+        "source": "com.example.imposter.app-main-61:/xml/backup_rules.xml"
+    }
+]
