@@ -1,5 +1,11 @@
 package com.example.imposter.ui.screens
 
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,251 +26,300 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.imposter.ui.theme.CardGrey
 import com.example.imposter.ui.theme.CardPurple
 import com.example.imposter.ui.theme.CardRed
 import com.example.imposter.ui.theme.CardTeal
 import com.example.imposter.ui.theme.CardYellow
-import com.example.imposter.ui.theme.ImposterTheme
 
 data class Player(
     val name: String,
     val color: Color,
-    val status: String
+    val status: String,
+    val isImposter: Boolean
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VotingScreen(
     viewModel: com.example.imposter.ui.viewmodel.GameViewModel,
     onVoteConfirmed: () -> Unit
 ) {
-    val uiState = androidx.compose.runtime.collectAsState(viewModel.uiState).value
+    val uiState = viewModel.uiState.collectAsState().value
+    var selectedPlayers by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val view = androidx.compose.ui.platform.LocalView.current
 
     // Auto-navigate to result when phase changes
-    androidx.compose.runtime.LaunchedEffect(uiState.phase) {
-        if (uiState.phase == com.example.imposter.ui.viewmodel.GamePhase.RESULT) {
-            onVoteConfirmed()
+    LaunchedEffect(uiState.phase) {
+        if (uiState.phase == com.example.imposter.ui.viewmodel.GamePhase.VOTING_RESULTS) {
+             onVoteConfirmed()
         }
     }
-
-    val players = uiState.players.map { 
+    
+    val players = uiState.players.mapIndexed { index, p -> 
         Player(
-            name = it.name, 
-            color = when(it.name) {
-                "Sarah (You)" -> CardYellow
-                "Marcus" -> CardPurple
-                "Elena" -> CardRed
+            name = p.name, 
+            color = when(index % 4) {
+                0 -> CardYellow
+                1 -> CardPurple
+                2 -> CardRed
                 else -> CardTeal
             },
-            status = "Alive" 
+
+            status = if (p.isEliminated) "Eliminated" else "Alive",
+            isImposter = p.isImposter
         )
     }
+    // Calculate max selections based on remaining imposters
+    // activeImpostersCount is not used as we enforce 1 selection for now.
+    
+    // Ensure at least 1 selection is allowed even if active count is weird, unless 0 players left.
+    // Host logic: Host selects who gets eliminated.
+    // If activeImpostersCount is e.g. 2, host can eliminate 2 people?
+    // User requirement: "vote again with the remaining players if enough players are available. if host selects wrong player then the player will be eliminated"
+    // This implies single elimination per vote usually? Or maxSelections = 1?
+    // "majority of selection will reduce to one" -> usually 1 per round.
+    // Let's set allowed selections to 1 for now to simplify, as "Vote Again" handles the loop.
+    val activeImpostersCount = uiState.players.count { !it.isEliminated && it.isImposter }
+    // Host selection logic: Allow selecting up to total number of imposters (min 1)
+    val maxSelections = if (activeImpostersCount > 0) activeImpostersCount else 1
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column {
-                Text(
-                    text = "VOTING PHASE",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Who is the\nImposter?",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f)
-                )
-            }
-            
-            // Timer Badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            // Header
+            Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth()
+                    .padding(24.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Timer,
-                    contentDescription = null,
-                    tint = Color(0xFFEF4444), // Red 500
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "0:45",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "VOTING PHASE",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Who is the\nImposter?",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f)
+                        )
+                    }
+                    
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Actions Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Button(
-                onClick = { /* Confirm */ },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onBackground,
-                    contentColor = MaterialTheme.colorScheme.background
-                ),
-                shape = RoundedCornerShape(32.dp),
-                modifier = Modifier.weight(1.5f)
-            ) {
-                Text("Confirm Vote")
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
             }
-            
-            OutlinedButton(
-                onClick = { /* Chat */ },
-                shape = RoundedCornerShape(32.dp),
+
+            // Players Grid
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Chat (3)")
+                items(players) { player ->
+                    val isSelected = selectedPlayers.contains(player.name)
+                    
+                    VoteCard(
+                        player = player, 
+                        isSelected = isSelected,
+                        isEnabled = player.status != "Eliminated", // Disable if eliminated
+                        onClick = { 
+                            view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                            selectedPlayers = if (isSelected) {
+                                selectedPlayers - player.name
+                            } else {
+                                // Enforce limit
+                                if (selectedPlayers.size < maxSelections) {
+                                    selectedPlayers + player.name
+                                } else {
+                                    // Make some feedback? Sarcastic toast?
+                                    selectedPlayers
+                                }
+                            }
+                        }
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Players Grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(players) { player ->
-                VoteCard(player, onClick = { viewModel.castVote(player.name) })
-            }
-            
-            // Skip Vote Card (Spans 2 columns)
-            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                SkipVoteCard()
-            }
-        }
-    }
-}
-
-@Composable
-fun VoteCard(player: Player, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(player.color)
-            .clickable { onClick() }
-            .padding(16.dp)
-            .height(180.dp), // Fixed height for grid consistency
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Selection Indicator (Placeholder)
-        Box(
-            modifier = Modifier
-                .align(Alignment.End)
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.1f)), // Placeholder check
-            contentAlignment = Alignment.Center
-        ) {
-           // Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Avatar Placeholder
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
+            // Bottom Action Bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
             ) {
-               Text(player.name.first().toString(), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Skip Vote Button
+                    OutlinedButton(
+                        onClick = { viewModel.castVote(listOf("SKIP")) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Skip Vote", fontWeight = FontWeight.Bold)
+                    }
+
+                    // Submit Vote Button
+                    FilledTonalButton(
+                        onClick = { 
+                            if (selectedPlayers.isNotEmpty()) {
+                                view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+                                viewModel.castVote(selectedPlayers.toList())
+                            }
+                        },
+                        enabled = selectedPlayers.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Submit Vote", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = player.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black.copy(alpha = 0.8f) // Text usually dark on colored cards
-            )
         }
-        
-        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
+
 @Composable
-fun SkipVoteCard() {
-    Row(
+fun VoteCard(player: Player, isSelected: Boolean, isEnabled: Boolean = true, onClick: () -> Unit) {
+    val elevation by animateDpAsState(
+        targetValue = if (isSelected) 6.dp else 2.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "elevation"
+    )
+
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(CardGrey)
-            .clickable { }
-            .padding(24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+            .height(170.dp)
+            .clickable(enabled = isEnabled, onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (!isEnabled) {
+                if (player.isImposter) Color(0xFF4CAF50) // Green for Imposter
+                else Color(0xFFEF5350) // Red for Crewmate
+            } else {
+                player.color
+            }
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = elevation
+        )
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(16.dp)
+                .then(if (!isEnabled) Modifier.alpha(0.6f) else Modifier) // Reduced opacity for disabled
         ) {
-            Icon(Icons.Rounded.Block, contentDescription = null, tint = Color.Black.copy(alpha = 0.7f))
+            // Selection Checkmark - Only show if enabled/selectable
+            if (isEnabled) {
+                Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else Color.Black.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        Icons.Rounded.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = "Skip Vote",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black.copy(alpha = 0.8f)
-        )
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun VotingScreenPreview() {
-    ImposterTheme {
-        VotingScreen()
+            // Player Info
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Avatar
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        player.name.firstOrNull()?.toString() ?: "?",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.Black.copy(alpha = 0.8f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = player.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black.copy(alpha = 0.9f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            // Eliminated Cross Overlay - Removed
+        }
     }
 }

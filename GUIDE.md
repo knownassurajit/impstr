@@ -81,6 +81,33 @@ Imposter is a **local multiplayer social deduction game** for Android, inspired 
 | Navigation | Navigation Compose |
 | Build System | Gradle (Kotlin DSL) |
 
+### Material Design 3 Implementation
+
+The app features a complete **Material Design 3** redesign with modern UI components and optimized animations:
+
+#### Theme System
+- **Color Scheme**: Complete MD3 color tokens (Primary, Secondary, Tertiary)
+- **Semantic Colors**: Success, Error, Warning, Info
+- **Surface Variants**: Proper elevation hierarchy
+- **Typography**: Full MD3 type scale (Display, Headline, Title, Body, Label)
+- **Dynamic Color**: Support for Android 12+ dynamic theming
+
+#### UI Components
+- `ElevatedCard` - Cards with proper elevation and shadows
+- `ModalBottomSheet` - Modern bottom sheets for configuration
+- `LinearProgressIndicator` - Progress tracking
+- `CircularProgressIndicator` - Timer visualization
+- `FilledTonalButton` - Primary action buttons
+- `OutlinedButton` - Secondary actions
+
+#### Animation Enhancements
+- **Duration**: Optimized from 300ms to 200ms for snappier feel
+- **Spring Physics**: Natural movement with `DampingRatioMediumBouncy`
+- **Transitions**: Smooth fade and scale animations
+- **List Items**: `animateItemPlacement` for reordering
+
+See [Material Design 3 Guidelines](https://m3.material.io/) for design principles.
+
 ---
 
 ## Importing Project to Android Studio
@@ -161,10 +188,10 @@ Imposter/
 │           │   │   │   ├── DiscussionScreen.kt # Discussion phase
 │           │   │   │   ├── VotingScreen.kt     # Voting phase
 │           │   │   │   └── ResultScreen.kt     # Game results
-│           │   │   ├── theme/                  # Material 3 theming
-│           │   │   │   ├── Color.kt
-│           │   │   │   ├── Theme.kt
-│           │   │   │   └── Type.kt
+│           │   │   ├── theme/                  # Material Design 3 theming
+│           │   │   │   ├── Color.kt            # MD3 color system
+│           │   │   │   ├── Theme.kt            # MD3 theme configuration
+│           │   │   │   └── Type.kt             # MD3 typography scale
 │           │   │   └── viewmodel/
 │           │   │       └── GameViewModel.kt    # Game state management
 │           │   └── res/

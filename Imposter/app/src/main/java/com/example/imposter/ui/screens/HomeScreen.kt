@@ -1,9 +1,14 @@
 package com.example.imposter.ui.screens
 
-import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,33 +26,61 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.Category
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Group
-import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.imposter.data.WordRepository
 import com.example.imposter.ui.theme.CardPurple
 import com.example.imposter.ui.theme.CardRed
 import com.example.imposter.ui.theme.CardTeal
 import com.example.imposter.ui.theme.CardYellow
-import com.example.imposter.ui.theme.ImposterTheme
+import kotlinx.coroutines.launch
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 
 data class LobbyPlayer(
+    val id: String,
     val name: String,
     val avatarColor: Color,
     val isReady: Boolean,
@@ -55,182 +88,492 @@ data class LobbyPlayer(
     val isMe: Boolean = false
 )
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: com.example.imposter.ui.viewmodel.GameViewModel,
-    onStartGame: () -> Unit
+    onStartGame: () -> Unit,
+    onHelpClick: () -> Unit
 ) {
     val uiState = viewModel.uiState.collectAsState().value
+    var showPlayerConfig by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf<Int?>(null) }
     
     // Map ViewModel PlayerState to UI LobbyPlayer
-    val players = uiState.players.map { playerState ->
+    val players = uiState.players.mapIndexed { index, playerState ->
         LobbyPlayer(
+            id = playerState.id,
             name = playerState.name,
-            avatarColor = when(playerState.name) {
-                "Sarah (You)" -> CardYellow
-                "Marcus" -> CardPurple
-                "Elena" -> CardRed
+            avatarColor = when(index % 4) {
+                0 -> CardYellow
+                1 -> CardPurple
+                2 -> CardRed
                 else -> CardTeal
             },
             isReady = playerState.isReady,
-            isHost = playerState.name.contains("Sarah"), // Simple check
-            isMe = playerState.name.contains("Sarah")
+            isHost = index == 0,
+            isMe = index == 0
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    if (showPlayerConfig) {
+        PlayerConfigBottomSheet(
+            currentCount = players.size,
+            currentImposterCount = uiState.imposterCount,
+            onDismiss = { showPlayerConfig = false },
+            onUpdateCount = { count -> viewModel.updatePlayerCount(count) },
+            onUpdateImposterCount = { count -> viewModel.updateImposterCount(count) }
+        )
+    }
+
+    if (showCategoryDialog) {
+        CategoryBottomSheet(
+            currentCategory = uiState.category,
+            onDismiss = { showCategoryDialog = false },
+            onCategorySelected = { category -> 
+                viewModel.updateCategory(category)
+                showCategoryDialog = false
+            }
+        )
+    }
+
+    if (showRenameDialog != null) {
+        val index = showRenameDialog!!
+        val currentName = players.getOrNull(index)?.name ?: ""
+        RenamePlayerBottomSheet(
+            currentName = currentName,
+            onDismiss = { showRenameDialog = null },
+            onConfirm = { newName ->
+                viewModel.updatePlayerName(index, newName)
+                showRenameDialog = null
+            }
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
-                .weight(1f)
-                .padding(24.dp)
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
         ) {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Room #8392",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Game\nLobby",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 44.sp
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), CircleShape)
-                        .padding(12.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.Share,
-                        contentDescription = "Share",
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    )
+                Text(
+                    text = "IMPSTR",
+                    style = MaterialTheme.typography.displayMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Black
+                )
+                Row {
+                    IconButton(onClick = onHelpClick) {
+                        Icon(
+                            Icons.Rounded.Info,
+                            contentDescription = "Help",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Info Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
                     color = CardYellow,
-                    icon = Icons.Rounded.Group,
+                    icon = Icons.Rounded.Person,
                     label = "Players",
-                    value = "${players.size}",
-                    subValue = "/8"
+                    value = "${uiState.imposterCount}/${players.size}",
+                    subLabel = "Imposters",
+                    onClick = { showPlayerConfig = true }
                 )
                 InfoCard(
                     modifier = Modifier.weight(1f),
                     color = CardTeal,
-                    icon = Icons.Rounded.Category,
+                    icon = Icons.Rounded.Info,
                     label = "Category",
-                    value = uiState.category.replace(" ", "\n"),
-                    subValue = ""
+                    value = uiState.category,
+                    subLabel = "",
+                    onClick = { showCategoryDialog = true }
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Players List
+            // Players List Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Joined Players",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "Players",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                TextButton(onClick = { 
+                    viewModel.updatePlayerCount(players.size + 1)
+                }) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add")
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Players List (Reorderable)
+            val state = rememberReorderableLazyListState(onMove = { from, to ->
+                viewModel.reorderPlayers(from.index, to.index)
+            })
+
+            LazyColumn(
+                state = state.listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .reorderable(state),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(players, key = { it.id }) { player ->
+                    ReorderableItem(
+                        reorderableState = state,
+                        key = player.id
+                    ) { isDragging ->
+                        val elevation = animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                        val index = players.indexOfFirst { it.id == player.id }
+                        
+                        PlayerListItem(
+                            player = player,
+                            modifier = Modifier
+                                .detectReorderAfterLongPress(state)
+                                .shadow(elevation.value, RoundedCornerShape(16.dp)),
+                            onEditClick = { if (index >= 0) showRenameDialog = index }
+                        )
+                    }
+                }
+                
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = { viewModel.updatePlayerCount(players.size - 1) },
+                            enabled = players.size > 3
+                        ) {
+                            Icon(
+                                Icons.Rounded.Remove,
+                                contentDescription = "Remove Player",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Remove")
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Start Game Button
+            FilledTonalButton(
+                onClick = onStartGame,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
                 Text(
-                    text = "Waiting for host...",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.Medium
+                    text = "Start Game",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    Icons.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
                 )
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(players) { player ->
-                    PlayerListItem(player)
-                }
-                item {
-                    AddPlayerButton()
-                }
-            }
         }
+    }
+}
 
-        // Bottom Action
-        Box(
+@Composable
+fun PlayerConfigBottomSheet(
+    currentCount: Int,
+    currentImposterCount: Int,
+    onDismiss: () -> Unit,
+    onUpdateCount: (Int) -> Unit,
+    onUpdateImposterCount: (Int) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                             MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                             MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = onStartGame,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onBackground,
-                    contentColor = MaterialTheme.colorScheme.background
-                )
+            Text(
+                "Configure Players",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Player Count
+            Text(
+                "Number of Players",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                IconButton(
+                    // The button is disabled UI-wise if count is 3 or less
+                    onClick = { if (currentCount > 3) onUpdateCount(currentCount - 1) }, 
+                    enabled = currentCount > 3 
                 ) {
-                    Text(
-                        text = "Start Game",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.2f))
-                            .padding(8.dp)
-                    ) {
-                        Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
-                    }
+                    // Ensure you have the 'material-icons-extended' dependency for .Remove
+                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease")
+                }
+                
+                Text(
+                    text = "$currentCount",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                IconButton(
+                    onClick = { onUpdateCount(currentCount + 1) }
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Increase")
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Imposter Count
+            Text(
+                "Number of Imposters",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                IconButton(
+                    onClick = { if (currentImposterCount > 1) onUpdateImposterCount(currentImposterCount - 1) },
+                    enabled = currentImposterCount > 1
+                ) {
+                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Imposters")
+                }
+                
+                Text(
+                    text = "$currentImposterCount",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                IconButton(
+                    onClick = { if (currentImposterCount < currentCount - 1) onUpdateImposterCount(currentImposterCount + 1) },
+                    enabled = currentImposterCount < currentCount - 1
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Increase Imposters")
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            FilledTonalButton(
+                onClick = {
+                    scope.launch {
+                        sheetState.hide()
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text("Done")
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun CategoryBottomSheet(
+    currentCategory: String,
+    onDismiss: () -> Unit,
+    onCategorySelected: (String) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val categories = WordRepository.categories.keys.toList()
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            item {
+                Text(
+                    "Select Category",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+            
+            items(categories) { category ->
+                ListItem(
+                    headlineContent = { Text(category) },
+                    leadingContent = {
+                        RadioButton(
+                            selected = category == currentCategory,
+                            onClick = { onCategorySelected(category) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onCategorySelected(category) },
+                    colors = ListItemDefaults.colors(
+                        containerColor = if (category == currentCategory) 
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        else Color.Transparent
+                    )
+                )
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun RenamePlayerBottomSheet(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Text(
+                "Rename Player",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Player Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text("Cancel")
+                }
+                
+                FilledTonalButton(
+                    onClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onConfirm(name)
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text("Save")
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -242,127 +585,59 @@ fun InfoCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
-    subValue: String
+    subLabel: String,
+    onClick: () -> Unit = {}
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(color)
-            .padding(20.dp)
-            .height(120.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Black.copy(alpha = 0.6f),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Icon(icon, contentDescription = null, tint = Color.Black.copy(alpha = 0.8f))
-        }
-        Text(
-            text = androidx.compose.ui.text.buildAnnotatedString {
-                append(value)
-                if (subValue.isNotEmpty()) {
-                    androidx.compose.ui.text.withStyle(
-                        style = androidx.compose.ui.text.SpanStyle(color = Color.Black.copy(alpha = 0.5f), fontSize = 20.sp)
-                    ) {
-                        append(subValue)
-                    }
-                }
-            },
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            lineHeight = 28.sp
+    ElevatedCard(
+        onClick = onClick,
+        modifier = modifier.height(110.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = color
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 2.dp
         )
-    }
-}
-
-@Composable
-fun PlayerListItem(player: LobbyPlayer) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background), // Image placeholder
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(player.avatarColor.copy(alpha = 0.3f))
-                    )
-                }
-                if (player.isHost) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(CardYellow)
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text("HOST", style = MaterialTheme.typography.labelSmall, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color.Black.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
-            Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = player.name,
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.Black,
+                    maxLines = 1
                 )
-                Text(
-                    text = if (player.isReady) "READY" else "NOT READY",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (player.isReady) Color(0xFF22c55e) else Color.Gray,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        
-        // Status Checkbox Visual
-        Box(
-            modifier = Modifier
-                .width(56.dp)
-                .height(32.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (player.isReady) Color(0xFF4ade80).copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Box(
-                modifier = Modifier
-                    .padding(4.dp)
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(if (player.isReady) Color(0xFF4ade80) else MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (player.isReady) {
-                    Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                } else {
-                    Icon(Icons.Rounded.Close, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                if (subLabel.isNotEmpty()) {
+                    Text(
+                        text = subLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Black.copy(alpha = 0.5f)
+                    )
                 }
             }
         }
@@ -370,28 +645,93 @@ fun PlayerListItem(player: LobbyPlayer) {
 }
 
 @Composable
-fun AddPlayerButton() {
-    Button(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth(),
+fun PlayerListItem(
+    player: LobbyPlayer,
+    modifier: Modifier = Modifier,
+    onEditClick: () -> Unit
+) {
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))),
-        contentPadding = PaddingValues(16.dp)
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 1.dp
+        )
     ) {
-         Icon(Icons.Rounded.Add, contentDescription = null)
-         Spacer(modifier = Modifier.width(8.dp))
-         Text("Add Player")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    ImposterTheme {
-        HomeScreen()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box {
+                    // Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(player.avatarColor.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = player.name.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black.copy(alpha = 0.8f)
+                        )
+                    }
+                    // Host Badge
+                    if (player.isHost) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 2.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = CardYellow,
+                            tonalElevation = 2.dp
+                        ) {
+                            Text(
+                                "HOST",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = player.name,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                       text = "Hold to move",
+                       style = MaterialTheme.typography.labelSmall,
+                       color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // Edit Button
+            IconButton(onClick = onEditClick) {
+                Icon(
+                    Icons.Rounded.Edit,
+                    contentDescription = "Edit Name",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
