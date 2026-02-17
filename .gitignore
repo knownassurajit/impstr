@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+/app/
+!.gitignore
+
+# Local configuration file (sdk.dir, etc.)
+local.properties
+
+# Android Studio
+.idea/
+.DS_Store
+*.iml
+*.hprof
+
+# Captures
+captures/
+
+# External Native Build
+.externalNativeBuild
+.cxx
