@@ -10,12 +10,12 @@ import androidx.compose.ui.graphics.Color
 fun GameView(
     modifier: Modifier = Modifier, // Standard to provide a default
     color: Color,
-    content: @Composable () -> Unit // Mark content as Composable
+    content: @Composable () -> Unit, // Mark content as Composable
 ) {
     // Your UI implementation goes here.
     // For example:
     androidx.compose.foundation.layout.Box(
-        modifier = modifier.background(color)
+        modifier = modifier.background(color),
     ) {
         content()
     }
@@ -24,5 +24,5 @@ fun GameView(
 data class GameViewData(
     val modifier: Modifier = Modifier,
     val color: Color,
-    val content: @Composable () -> Unit
+    val content: @Composable () -> Unit,
 )

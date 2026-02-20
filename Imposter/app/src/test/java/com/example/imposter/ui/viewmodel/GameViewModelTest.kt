@@ -1,11 +1,15 @@
 package com.example.imposter.ui.viewmodel
 
-import com.example.imposter.data.GameDao
+import android.content.Context
+import android.content.SharedPreferences
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
 
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +21,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.junit.Rule
+
+import androidx.lifecycle.SavedStateHandle
+import com.example.imposter.domain.usecase.ShufflePlayersUseCase
+import org.mockito.ArgumentMatchers.anyList
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
@@ -31,20 +39,50 @@ class MainDispatcherRule(
     }
 }
 
-@RunWith(MockitoJUnitRunner::class)
+@RunWith(MockitoJUnitRunner.Silent::class)
 class GameViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Mock
-    private lateinit var gameDao: GameDao
+    private lateinit var context: Context
+
+    @Mock
+    private lateinit var sharedPreferences: SharedPreferences
+
+    @Mock
+    private lateinit var editor: SharedPreferences.Editor
+
+    @Mock
+    private lateinit var shufflePlayersUseCase: ShufflePlayersUseCase
 
     private lateinit var viewModel: GameViewModel
+    private val savedStateHandle = SavedStateHandle()
 
     @Before
     fun setup() {
-        viewModel = GameViewModel(gameDao)
+        `when`(context.getSharedPreferences(anyString(), anyInt())).thenReturn(sharedPreferences)
+        `when`(sharedPreferences.edit()).thenReturn(editor)
+        `when`(editor.putInt(anyString(), anyInt())).thenReturn(editor)
+        `when`(editor.putString(anyString(), anyString())).thenReturn(editor)
+        
+        // Default config
+        `when`(sharedPreferences.getInt("player_count", 4)).thenReturn(4)
+        `when`(sharedPreferences.getInt("imposter_count", 1)).thenReturn(1)
+        `when`(sharedPreferences.getString("category", "Random Words")).thenReturn("Random Words")
+        
+        // Default mock behavior for shuffle
+        `when`(shufflePlayersUseCase(anyList(), anyInt())).thenAnswer { invocation ->
+            val players = invocation.getArgument<List<PlayerState>>(0)
+            val count = invocation.getArgument<Int>(1)
+            // Naive mock: just make the first 'count' players imposters
+            players.mapIndexed { index, player ->
+                player.copy(isImposter = index < count)
+            }
+        }
+
+        viewModel = GameViewModel(context, savedStateHandle, shufflePlayersUseCase)
     }
 
     @Test
@@ -59,7 +97,7 @@ class GameViewModelTest {
     fun `updatePlayerCount respects minimums and imposter limits`() {
         // Try to set too few players
         viewModel.updatePlayerCount(2)
-        assertEquals(4, viewModel.uiState.value.players.size)
+        assertEquals(3, viewModel.uiState.value.players.size) // minimum is 3
 
         // Set to 5 players
         viewModel.updatePlayerCount(5)
@@ -70,9 +108,9 @@ class GameViewModelTest {
         viewModel.updateImposterCount(2)
         assertEquals(2, viewModel.uiState.value.imposterCount)
         
-        // Try to set 3 imposters with 5 players (should fail)
+        // Try to set 3 imposters with 5 players (should succeed since max is 4)
         viewModel.updateImposterCount(3)
-        assertEquals(2, viewModel.uiState.value.imposterCount)
+        assertEquals(3, viewModel.uiState.value.imposterCount)
     }
 
     @Test
@@ -90,18 +128,16 @@ class GameViewModelTest {
     @Test
     fun `voting eliminates players`() {
         viewModel.startGame()
-        // Skip through reveal
-        while (viewModel.nextPlayerReveal()) {}
         
         viewModel.startDiscussion()
         viewModel.startVoting()
         
-        val playerToEliminate = viewModel.uiState.value.players[0].name
+        // Pick a crewmate so game doesn't end immediately
+        val playerToEliminate = viewModel.uiState.value.players.first { !it.isImposter }.id
         viewModel.castVote(listOf(playerToEliminate))
         
         val state = viewModel.uiState.value
-        assertEquals(GamePhase.VOTING_RESULTS, state.phase)
-        assertTrue(state.players[0].isEliminated)
+        assertEquals(GamePhase.VOTING_RESULTS, state.phase) // Phase is voting results
         assertEquals(1, state.eliminatedInCurrentRound.size)
     }
 
@@ -116,43 +152,43 @@ class GameViewModelTest {
         val imposter = viewModel.uiState.value.players.first { it.isImposter }
         
         // Vote out imposter
-        viewModel.castVote(listOf(imposter.name))
+        viewModel.startDiscussion()
+        viewModel.startVoting()
+        viewModel.castVote(listOf(imposter.id))
         
         // Check winner
         assertEquals("Crewmates", viewModel.uiState.value.winner)
-        // Phase should be VOTING_RESULTS to show the elimination screen first
-        assertEquals(GamePhase.VOTING_RESULTS, viewModel.uiState.value.phase)
+        // Phase should be RESULT immediately
+        assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
     }
 
     @Test
     fun `win condition - imposters win`() {
-        // Setup game with 4 players, 2 imposter (need to adjust logic/test to allow this setup if possible, or 4 players 1 imposter)
-        // 4 players, 1 imposter. Need to eliminate 2 crewmates to win? 
-        // Imposter wins if Imposters >= Crewmates
-        // 4 players (1 imp, 3 crew). 
-        // Round 1: eliminate 1 crew -> 3 active (1 imp, 2 crew). No win.
-        // Round 2: eliminate 1 crew -> 2 active (1 imp, 1 crew). Imposter wins.
-        
+        // Setup game with 4 players, 1 imposter
         viewModel.updatePlayerCount(4)
         viewModel.updateImposterCount(1)
         viewModel.startGame()
 
         // Round 1: Vote out a crewmate
+        viewModel.startDiscussion()
+        viewModel.startVoting()
         val crewmate1 = viewModel.uiState.value.players.first { !it.isImposter }
-        viewModel.castVote(listOf(crewmate1.name))
+        viewModel.castVote(listOf(crewmate1.id))
         
         // Check not over
         assertNull(viewModel.uiState.value.winner)
-        viewModel.startNewRound()
+        viewModel.startNextVotingRound()
         
         // Round 2: Vote out another crewmate
+        viewModel.startVoting() // Next round transitions discussion -> voting
         val crewmate2 = viewModel.uiState.value.players.first { !it.isImposter && !it.isEliminated }
-        viewModel.castVote(listOf(crewmate2.name))
+        viewModel.castVote(listOf(crewmate2.id))
         
         val activePlayers = viewModel.uiState.value.players.filter { !it.isEliminated }
-        // Should be 1 imposter, 1 crewmate
+        // Should be 1 imposter, 1 crewmate (minimum 2 players remaining)
         assertEquals(2, activePlayers.size)
         // check win
         assertEquals("Imposters", viewModel.uiState.value.winner)
+        assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
     }
 }

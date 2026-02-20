@@ -1,13 +1,11 @@
 package com.example.imposter.ui.screens
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,17 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -33,49 +25,69 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.imposter.ui.theme.CardPurple
-import com.example.imposter.ui.theme.CardRed
-import com.example.imposter.ui.theme.CardTeal
-import com.example.imposter.ui.theme.CardYellow
+import androidx.compose.ui.unit.sp
+import com.example.imposter.ui.components.KeepScreenOn
 import com.example.imposter.ui.viewmodel.GameViewModel
 import com.example.imposter.ui.viewmodel.PlayerState
 
+@RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun VotingResultsScreen(
     viewModel: GameViewModel,
     onVoteAgain: () -> Unit,
-    onEndGame: () -> Unit
+    onEndGame: () -> Unit,
+    onBackToLobby: () -> Unit,
 ) {
     val uiState = viewModel.uiState.collectAsState().value
     val eliminatedPlayers = uiState.eliminatedInCurrentRound
     val view = androidx.compose.ui.platform.LocalView.current
+    KeepScreenOn()
     val isGameOver = uiState.winner != null
+
+    var showExitDialog by remember { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler {
+        showExitDialog = true
+    }
+
+    if (showExitDialog) {
+        com.example.imposter.ui.components.ExitConfirmationDialog(
+            onDismiss = { showExitDialog = false },
+            onGoToLobby = {
+                showExitDialog = false
+                viewModel.resetGame()
+                onBackToLobby()
+            },
+        )
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             // Header
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
             ) {
                 Text(
                     text = "VOTING RESULTS",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (eliminatedPlayers.isEmpty()) {
@@ -84,7 +96,7 @@ fun VotingResultsScreen(
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f)
+                        lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f),
                     )
                 } else {
                     Text(
@@ -92,66 +104,102 @@ fun VotingResultsScreen(
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f)
+                        lineHeight = MaterialTheme.typography.displaySmall.lineHeight.times(0.9f),
                     )
                 }
             }
 
-            // Eliminated Players Grid
+            // Main Content Area
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                 if (eliminatedPlayers.isNotEmpty()) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(1),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Timer Circle (Matches DiscussionScreen)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(280.dp),
+                ) {
+                    ElevatedCard(
+                        modifier = Modifier.size(240.dp),
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        colors =
+                            CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                            ),
+                        elevation =
+                            CardDefaults.elevatedCardElevation(
+                                defaultElevation = 4.dp,
+                            ),
                     ) {
-                        items(eliminatedPlayers) { player ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                com.example.imposter.ui.components.TimerDisplay(
+                                    seconds = uiState.totalGameTime,
+                                    style = MaterialTheme.typography.displayLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = "TOTAL TIME",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                if (eliminatedPlayers.isNotEmpty()) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        eliminatedPlayers.forEach { player ->
                             EliminatedPlayerCard(player)
                         }
                     }
                 } else {
-                     Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                       Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Skipped vote",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "The game continues...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f)
-                            )
-                       }
-                    }
+                    Text(
+                        text = "Skipped vote",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
 
             // Bottom Action Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp
+                tonalElevation = 3.dp,
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (!isGameOver) {
-                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             FilledTonalButton(
                                 onClick = {
@@ -159,43 +207,47 @@ fun VotingResultsScreen(
                                     viewModel.startNextVotingRound()
                                     onVoteAgain()
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(56.dp),
+                                shape = MaterialTheme.shapes.medium,
+                                colors =
+                                    androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    ),
                             ) {
-                                Text("Vote Again", fontWeight = FontWeight.Bold)
+                                Text("Next Round", fontWeight = FontWeight.Bold)
                             }
-                            
+
                             OutlinedButton(
                                 onClick = {
-                                     view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
-                                     viewModel.endGame()
-                                     onEndGame()
+                                    view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+                                    viewModel.endGame()
+                                    onEndGame()
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp)
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(56.dp),
+                                shape = MaterialTheme.shapes.medium,
                             ) {
                                 Text("End Game", fontWeight = FontWeight.Bold)
                             }
                         }
                     } else {
-                         FilledTonalButton(
-                            onClick = { 
+                        FilledTonalButton(
+                            onClick = {
                                 view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
                                 viewModel.proceedFromResults()
-                                onEndGame() 
+                                onEndGame()
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
                             Text("See Game Results", fontWeight = FontWeight.Bold)
                         }
@@ -211,36 +263,41 @@ fun EliminatedPlayerCard(player: PlayerState) {
     val isImposter = player.isImposter
     val backgroundColor = if (isImposter) Color(0xFF4CAF50) else MaterialTheme.colorScheme.errorContainer
     val contentColor = if (isImposter) Color.White else MaterialTheme.colorScheme.onErrorContainer
-    
-     ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = backgroundColor
-        )
+
+    ElevatedCard(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(100.dp),
+        shape = MaterialTheme.shapes.large,
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = backgroundColor,
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-             Column(
-                verticalArrangement = Arrangement.Center
+            Column(
+                verticalArrangement = Arrangement.Center,
             ) {
-                 Text(
+                Text(
                     text = player.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = contentColor
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                 Text(
+                Text(
                     text = if (isImposter) "Imposter identified" else "Was not an Imposter",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = contentColor.copy(alpha = 0.9f)
+                    color = contentColor.copy(alpha = 0.9f),
                 )
             }
         }
