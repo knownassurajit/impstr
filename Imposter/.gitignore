@@ -1,17 +1,37 @@
+# ============================================================
+# Imposter/ module .gitignore
+# ============================================================
+
+# ── Gradle ───────────────────────────────────────────────────
 *.iml
-.gradle
+.gradle/
 /local.properties
-/.idea/caches
-/.idea/libraries
+/build/
+build_output.txt
+
+# ── Android Studio / IntelliJ (module-level) ─────────────────
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-# Java heap dumps
+
+# ── Native build artefacts ───────────────────────────────────
+.externalNativeBuild/
+.cxx/
+
+# ── Keystore / signing credentials ───────────────────────────
+*.jks
+*.keystore
+release-keystore.properties
+
+# ── Captures ─────────────────────────────────────────────────
+/captures/
+
+# ── Java heap dumps ──────────────────────────────────────────
 *.hprof
+
+# ── Release outputs (don't commit built bundles/APKs) ────────
+app/release/

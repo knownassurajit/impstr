@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="204.8dp"
-    android:height="204.8dp"
+    android:width="108dp"
+    android:height="108dp"
     android:viewportWidth="2048"
     android:viewportHeight="2048">
 
-    <!-- Background -->
-    <path
-        android:fillColor="#0B0B0F"
-        android:pathData="M 0,0 H 2048 V 2048 H 0 Z" />
-
+    <!-- The design is centered in the 2048x2048 viewport -->
+    
     <!-- Main Identity Bar (Civilian) -->
     <path
         android:fillColor="#FFFFFF"
