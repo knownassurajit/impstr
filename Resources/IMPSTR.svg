@@ -1,0 +1,29 @@
+<svg width="1800" height="500" viewBox="0 0 1800 500" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        @keyframes text-blink {
+            0%, 49% { fill: #000000; }
+            50%, 100% { fill: #FFFFFF; }
+        }
+        .cursor { animation: blink 1.2s infinite; }
+        .m-letter { animation: text-blink 1.2s infinite; }
+    </style>
+    <!-- Background -->
+    <rect width="1800" height="500" fill="#0B0B0F" />
+
+    <!-- Cursor rectangle perfectly centered behind M -->
+    <rect class="cursor" x="460" y="110" width="220" height="275" rx="10" fill="#3B82F6" />
+
+    <!-- Wordmark with evenly distributed letters -->
+    <text y="340" font-family="Google Sans, Product Sans, Arial, sans-serif" font-size="260" font-weight="600" text-anchor="middle">
+        <tspan x="450" fill="#FFFFFF">I</tspan>
+        <tspan x="605" class="m-letter" fill="#000000">M</tspan>
+        <tspan x="805" fill="#FFFFFF">P</tspan>
+        <tspan x="975" fill="#FFFFFF">S</tspan>
+        <tspan x="1150" fill="#FFFFFF">T</tspan>
+        <tspan x="1290" fill="#FFFFFF">R</tspan>
+    </text>
+</svg>

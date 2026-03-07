@@ -1,4 +1,12 @@
-# 🎭 Imposter — Android Social Deduction Game
+<div align="center">
+  <img src="Resources/IMPSTR.svg" width="100%" alt="IMPSTR Logo">
+</div>
+
+<div align="center">
+  <em>The title "IMPSTR" represents the players. The letter 'O' has been eliminated from the game, and we are highlighting 'M' because it is the imposter.</em>
+</div>
+
+<br>
 
 <div align="center">
 
