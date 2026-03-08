@@ -20,7 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.game.impstr.ui.theme.ImposterTheme
+import com.game.impstr.ui.theme.IMPSTRTheme
 import kotlinx.coroutines.delay
 
 @SuppressLint("CustomSplashScreen")
@@ -28,7 +28,7 @@ class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ImposterTheme(darkTheme = true) {
+            IMPSTRTheme(darkTheme = true) {
                 SplashScreen {
                     startActivity(Intent(this@SplashActivity, MainActivity::class.java))
                     finish()

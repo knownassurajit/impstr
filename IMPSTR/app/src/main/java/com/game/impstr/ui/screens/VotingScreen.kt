@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +52,7 @@ fun VotingScreen(
     onVoteConfirmed: () -> Unit,
     onGameEnd: () -> Unit,
 ) {
-    val uiState = viewModel.uiState.collectAsState().value
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
     var selectedPlayerIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val view = androidx.compose.ui.platform.LocalView.current
     KeepScreenOn()

@@ -15,9 +15,10 @@
 [![Material Design 3](https://img.shields.io/badge/Material%20Design-3-blue)](https://m3.material.io/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack-Compose-brightgreen)](https://developer.android.com/jetpack/compose)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple)](https://kotlinlang.org/)
+[![Security Crypto](https://img.shields.io/badge/Security-Crypto-red)](https://developer.android.com/topic/security/data)
 [![Min SDK](https://img.shields.io/badge/Min%20SDK-31-orange)](https://developer.android.com/about/versions/12/behavior-changes-12)
 [![Target SDK](https://img.shields.io/badge/Target%20SDK-36-green)](https://developer.android.com/about/versions/)
-[![Version](https://img.shields.io/badge/Version-1.0.0.1-blue)](#)
+[![Version](https://img.shields.io/badge/Version-1.0.0.2-blue)](#)
 
 </div>
 
@@ -25,256 +26,112 @@
 
 ## 📑 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [How to Play](#-how-to-play)
-- [Technology Stack](#-technology-stack)
-- [Dependencies](#-dependencies)
-- [Requirements](#-requirements)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [State Management](#-state-management)
-- [Game Mechanics](#-game-mechanics)
-- [Theme & Design System](#-theme--design-system)
-- [Getting Started](#-getting-started)
-- [Build & Deployment](#-build--deployment)
-- [Testing](#-testing)
-- [License](#-license)
-- [Developer Info](#-developer-info)
+- [📖 Overview](#-overview)
+- [✨ Key Features](#-key-features)
+- [🎯 How to Play](#-how-to-play)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [🧱 Architecture](#-architecture)
+- [🧠 State Management System](#-state-management-system)
+- [🎨 Design System](#-design-system)
+- [🔒 Security Enhancements](#-security-enhancements)
+- [⚡ Performance Optimizations](#-performance-optimizations)
+- [🚀 Getting Started](#-getting-started)
+- [🏗️ Build & Testing](#️-build--testing)
+- [📝 License & Developer](#-license--developer)
 
 ---
 
 ## 📖 Overview
 
-**Imposter** is a local multiplayer social deduction game inspired by Mafia and Among Us. Players pass a single Android device around; one player is secretly assigned as the **Imposter** while others receive a secret word. Through strategic discussion and voting, players must identify the imposter before they blend in and win!
+**IMPSTR** is an intensely strategic, pass-and-play social deduction game designed specifically for Android. Taking inspiration from classic party games like Mafia and Among Us, IMPSTR streamlines the experience into a seamless, highly-polished mobile experience. 
 
-### ✨ Key Features
+Through a beautifully crafted Material Design 3 interface, 3 to 10 players share a single device. Everyone receives a secret word—except the **Imposter**, who receives nothing. It's a battle of wits: Crewmates must identify the Imposter without giving the word away, while the Imposter must blend in, decipher the category context, and survive the vote!
 
-- 🎮 **Pass-and-Play Multiplayer** — Single device shared among 3–10 players
-- 🔒 **Fully Offline** — No internet connection required
-- 🎨 **Material Design 3** — Modern, polished UI with smooth spring-physics animations
-- 📂 **24 Word Categories** — Animals, Food, Movies, Space, and more
-- ⚡ **Optimized Performance** — State managed with `StateFlow` and coroutine timers
-- 🌙 **Dark Theme** — Beautiful dark-mode design optimised for mobile
-- 🎯 **Strategic Gameplay** — Discussion timer, voting mechanics, win-condition tracking
-- 💾 **Persistent Config** — Player names and settings saved via `SharedPreferences`
-- 📱 **Wide Compatibility** — Android 12+ (API 31)
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+| :--- | :--- |
+| 🎮 **Pass-and-Play Multiplayer** | Play together in the same room using just one Android device. Supports 3–10 players. |
+| 🔒 **Fully Offline Setup** | No internet connection required. Play anywhere, anytime, without ads or tracking. |
+| 🎨 **Material Design 3 Engine** | Powered by Jetpack Compose. Fluid spring physics, dynamic theming, and immersive dark mode. |
+| 📂 **Huge Library** | Over 24 expansive word categories, randomly generated to keep every round unpredictable. |
+| ⚡ **Lifecycle-Aware Performance** | Bleeding-edge Compose implementations using `collectAsStateWithLifecycle` for zero background battery drain. |
+| 🛡️ **Encrypted State** | Player configurations and data are securely persisted via Android's `EncryptedSharedPreferences`. |
+| 🎯 **Tense Strategic Mechanics** | Integrated discussion timers, intense voting logic, and comprehensive elimination history tracking. |
 
 ---
 
 ## 🎯 How to Play
 
-### Game Setup
-1. **Configure Players** — Add 3–10 player names
-2. **Select Category** — Choose from 24 word categories
-3. **Set Imposter Count** — 1–3 imposters recommended
-4. **Start Game** — Tap **Start Game**
+### Flowchart of a Standard Match
 
-### Game Phases
+```mermaid
+graph TD;
+    A[Lobby Setup] -->|Start Round| B[Pass-and-Play Role Reveal];
+    B -->|Everyone Knows Role| C[Timed Discussion Phase];
+    C -->|Timer Ends / Skip| D[Host Conducts Voting];
+    D --> E[Elimination Results];
+    E -->|Win Conditions Met?| F{Check Winner};
+    F -- Yes --> G[Final Results Screen];
+    F -- No --> C;
+```
 
-#### Phase 1: Role Assignment
-Each player privately reveals their role on the device, then hands it to the next player.
+### Game Phases Detailed
 
-#### Phase 2: Discussion (3 minutes)
-All players discuss without revealing the secret word. Skip the timer to vote early.
+**1. Setup Phase**
+- Drag and drop player names to organize turn order.
+- Select the total count of IMPSTRs (can scale with the size of your group).
+- Agree on a category from the 24 available options.
 
-#### Phase 3: Voting
-The host selects the player(s) most suspected of being the imposter.
+**2. Pass & Reveal Phase**
+- Pass the phone around the room.
+- Each player taps to reveal a beautifully animated 3D flip-card.
+- Memorize whether you are a **Crewmate** (shown the secret word) or the **IMPSTR**.
 
-#### Phase 4: Voting Results
-Eliminated players' roles are revealed (imposter or crewmate).
+**3. Discussion Phase**
+- A tense 3-minute timer begins.
+- Players talk to figure out who doesn't know the word, while the IMPSTR tries to bluff.
+- *Tip: Don't be too specific, or the IMPSTR will guess the word!*
 
-#### Phase 5: Game Results
-Final outcome shown with elimination history and total game duration.
-
-### Win Conditions
-- **Crewmates Win** — All imposters are eliminated
-- **Imposters Win** — Imposters equal or outnumber crewmates
+**4. Voting & Results Phase**
+- The Host takes the phone and selects the suspect(s).
+- Eliminated players' roles are unmasked. 
+- Play repeats until one side claims victory.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technology | Version |
+| Ecosystem | Technology | Details |
 |-----------|-----------|---------|
-| **Language** | Kotlin | 2.0.21 |
-| **UI Framework** | Jetpack Compose (Material 3) | BOM 2024.10.01 |
-| **Architecture** | MVVM + Unidirectional Data Flow | — |
-| **State Management** | StateFlow + Coroutines | Kotlin 2.0+ |
-| **Dependency Injection** | Hilt | 2.51.1 |
-| **Navigation** | Navigation Compose | 2.8.3 |
-| **Storage** | SharedPreferences | AndroidX |
-| **Build System** | Gradle Kotlin DSL | 8.7.3 |
-| **AGP** | Android Gradle Plugin | 8.7.3 |
-| **Min / Target SDK** | Android 12 / Android 16 | API 31 / 36 |
-| **JVM Target** | Java | 17 |
+| **Core App** | Jetpack Compose | Declarative UI framework leveraging Material 3 tokens. |
+| **Language** | Kotlin 2.0.21 | Functional, null-safe, concise. |
+| **Architecture** | MVVM | Strict separation of UI and business logic. |
+| **Reactivity** | StateFlow & Coroutines | Unidirectional Data Flow pattern. |
+| **Dependency Injection** | Hilt | Scoped view-models `@HiltViewModel`. |
+| **Security** | Security-Crypto | Implementations of `AES256_GCM` algorithms. |
+| **Build Tools** | Gradle Kotlin DSL | KSP code generation and robust build configurations. |
 
 ---
 
-## 📦 Dependencies
+## 🧱 Architecture
 
-### AndroidX & Lifecycle
-- **androidx.core:core-ktx** (1.15.0)
-- **androidx.lifecycle:lifecycle-runtime-ktx** (2.8.7)
-- **androidx.activity:activity-compose** (1.9.3)
+IMPSTR leverages a robust, industry-standard **Model-View-ViewModel (MVVM)** pattern alongside an uncompromising **Unidirectional Data Flow (UDF)**. 
 
-### Jetpack Compose & UI
-- **androidx.compose:compose-bom** (2024.10.01)  
-  Includes: Material 3, Material Icons Extended, Foundation, Runtime & Tooling
-
-### Navigation & Routing
-- **androidx.navigation:navigation-compose** (2.8.3)
-- **androidx.hilt:hilt-navigation-compose** (1.2.0)
-
-### Dependency Injection
-- **com.google.dagger:hilt-android** (2.51.1)
-- **com.google.dagger:hilt-android-compiler** (2.51.1) via KSP
-
-### UI Utilities
-- **org.burnoutcrew.composereorderable:reorderable** (0.9.6) — drag-and-drop player reordering
-
-### Testing
-- **junit:junit** (4.13.2)
-- **org.mockito:mockito-core** (5.21.0)
-- **org.mockito.kotlin:mockito-kotlin** (6.2.3)
-- **org.jetbrains.kotlinx:kotlinx-coroutines-test** (1.10.2)
-- **androidx.test.ext:junit** (1.3.0)
-- **androidx.test.espresso:espresso-core** (3.7.0)
+- **UI Layer (Jetpack Compose)**: Completely passive screens. They observe `GameState` through lifecycle-aware flows (`collectAsStateWithLifecycle`) and dispatch raw intents to the ViewModel.
+- **ViewModel Layer (`GameViewModel`)**: Houses the central `MutableStateFlow<GameState>`. Calculates player shuffling, timer coroutines, and processes the voting algorithm.
+- **Data & UseCase Layer**: Singular domains handling SharedPreferences cryptography and random word assignment protocols.
 
 ---
 
-## 📱 Requirements
+## 🧠 State Management System
 
-- **Android Version**: 12 (API 31) or higher
-- **Storage**: ~15 MB for APK installation
-- **RAM**: 512 MB minimum (1 GB+ recommended)
-- **Network**: None — fully offline
-- **Device**: Any Android phone/tablet with a touchscreen
-
----
-
-## 🏗️ Architecture
-
-### MVVM with Unidirectional Data Flow
-
-```
-┌──────────────────────────────────────────────────┐
-│  UI Layer (Jetpack Compose)                      │
-│  SplashActivity, HomeScreen, RoleRevealScreen,   │
-│  DiscussionScreen, VotingScreen,                 │
-│  VotingResultsScreen, ResultScreen               │
-└────────────────┬─────────────────────────────────┘
-                 │ collects StateFlow<GameState>
-                 │ calls ViewModel.method()
-                 ▼
-┌──────────────────────────────────────────────────┐
-│  ViewModel Layer                                 │
-│  GameViewModel (Hilt Singleton)                  │
-│  - Manages GameState (StateFlow)                 │
-│  - Implements all game logic & phase transitions │
-│  - Drives discussion/game timers (coroutines)    │
-│  - Persists config via SharedPreferences         │
-└────────────────┬─────────────────────────────────┘
-                 │ reads
-                 ▼
-┌──────────────────────────────────────────────────┐
-│  Data Layer                                      │
-│  WordRepository (Kotlin object singleton)        │
-│  - 24 word categories with random selection      │
-│  ShufflePlayersUseCase                           │
-│  - Randomly assigns imposter roles               │
-└──────────────────────────────────────────────────┘
-```
-
-### Design Patterns
-1. **MVVM** — Clear separation of UI, business logic, and data
-2. **Unidirectional Data Flow** — Event → ViewModel → State → UI recompose
-3. **Hilt DI** — `@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`
-4. **Single Activity** — One `MainActivity` hosts all Compose screens via `NavHost`
-5. **Use Cases** — `ShufflePlayersUseCase` encapsulates role-assignment logic
-
----
-
-## 📂 Project Structure
-
-```
-impstr/
-├── .gitignore                          # Root ignore rules
-├── README.md                           # This file
-│
-├── Resources/
-│   ├── README.md                       # Internal docs index
-│   └── icon_play_store.png             # Play Store icon asset
-│
-└── Imposter/                           # Android project root
-    ├── build.gradle.kts                # Project-level plugin versions
-    ├── settings.gradle.kts
-    ├── gradle.properties
-    ├── gradlew / gradlew.bat
-    ├── gradle/
-    │   └── libs.versions.toml
-    │
-    └── app/
-        ├── build.gradle.kts            # App-level dependencies & config
-        └── src/
-            ├── main/
-            │   ├── AndroidManifest.xml
-            │   └── java/com/game/impstr/
-            │       ├── ImposterApp.kt              # @HiltAndroidApp entry point
-            │       ├── MainActivity.kt             # NavHost + HelpDialog composables
-            │       ├── SplashActivity.kt           # Splash screen
-            │       │
-            │       ├── data/
-            │       │   └── WordRepository.kt       # 24 categories, random word selection
-            │       │
-            │       ├── domain/usecase/
-            │       │   └── ShufflePlayersUseCase.kt
-            │       │
-            │       ├── ui/
-            │       │   ├── components/
-            │       │   │   ├── Components.kt       # Shared UI components
-            │       │   │   ├── Dialogs.kt          # HelpDialog & other dialogs
-            │       │   │   ├── FlipCard.kt         # Card-flip animation component
-            │       │   │   ├── KeepScreenOn.kt     # Screen-wake utility
-            │       │   │   └── TimerDisplay.kt     # Circular countdown timer
-            │       │   │
-            │       │   ├── screens/
-            │       │   │   ├── HomeScreen.kt       # Player setup & lobby
-            │       │   │   ├── RoleRevealScreen.kt # Pass-and-play role reveal
-            │       │   │   ├── DiscussionScreen.kt # 3-min timed discussion
-            │       │   │   ├── VotingScreen.kt     # Host voting panel
-            │       │   │   ├── VotingResultsScreen.kt # Elimination results
-            │       │   │   └── ResultScreen.kt     # Final game outcome
-            │       │   │
-            │       │   ├── theme/
-            │       │   │   ├── Color.kt            # Material 3 color tokens
-            │       │   │   ├── Motion.kt           # Animation specs
-            │       │   │   ├── Shapes.kt           # Material 3 shape tokens
-            │       │   │   ├── Theme.kt            # ImposterTheme setup
-            │       │   │   └── Type.kt             # Typography scale
-            │       │   │
-            │       │   └── viewmodel/
-            │       │       └── GameViewModel.kt    # Core game logic & StateFlow
-            │       │
-            │       └── res/
-            │           ├── drawable/               # Icons, launcher & splash assets
-            │           ├── font/                   # Custom typefaces
-            │           ├── mipmap-*/               # Launcher icons (all densities)
-            │           ├── values/                 # strings.xml, colors.xml
-            │           └── xml/                    # Backup rules, data extraction rules
-            │
-            └── test/
-                └── java/com/game/impstr/ui/viewmodel/
-                    └── GameViewModelTest.kt        # JUnit 4 unit tests (6 tests)
-```
-
----
-
-## 🧠 State Management
-
-### GameState
+The entire game state is encapsulated in an `@Stable` annotated data class, ensuring maximum Jetpack Compose stability and minimizing unnecessary recompositions.
 
 ```kotlin
+@Stable
 data class GameState(
     val phase: GamePhase = GamePhase.SETUP,
     val players: List<PlayerState> = emptyList(),
@@ -282,119 +139,35 @@ data class GameState(
     val secretWord: String = "",
     val imposterNames: List<String> = emptyList(),
     val imposterCount: Int = 1,
-    val elapsedTime: Long = 0,             // Seconds elapsed in current phase
-    val currentRoundNumber: Int = 1,
-    val roundStartTime: Long = 0,          // Timestamp when current phase started
-    val totalGameTime: Long = 0,           // Total seconds since game start
-    val winner: String? = null,            // "Crewmates" | "Imposters" | null
-    val currentRevealPlayerIndex: Int = 0,
-    val isCardRevealed: Boolean = false,
-    val isCardFlipping: Boolean = false,
-    val lastEliminatedPlayer: PlayerState? = null,
-    val eliminatedInCurrentRound: List<PlayerState> = emptyList(),
-    val eliminationHistory: List<EliminationRecord> = emptyList(),
+    // ... Timer metrics, elimination tracking, and UI animation flags
 )
 ```
 
-### GamePhase Enum
-
-```kotlin
-enum class GamePhase {
-    SETUP,          // Player & category configuration
-    ROLE_REVEAL,    // Each player privately sees their role
-    DISCUSSION,     // 3-minute timed discussion phase
-    HOST_VOTING,    // Host selects player(s) to eliminate
-    VOTING_RESULTS, // Shows eliminated player(s) and their roles
-    RESULT,         // Final game outcome
-}
-```
-
-### PlayerState
-
-```kotlin
-data class PlayerState(
-    val id: String,           // UUID — used for vote tracking
-    val name: String,
-    val isImposter: Boolean = false,
-    val isReady: Boolean = false,
-    val hasVoted: Boolean = false,
-    val isEliminated: Boolean = false,
-)
-```
-
-### Reactive Data Flow
-
-```
-User Action → Screen calls viewModel.method()
-           → ViewModel updates MutableStateFlow<GameState>
-           → StateFlow emits new GameState
-           → Composable collects & recomposes
-           → User sees updated UI
-```
+Transitions between `GamePhase` states trigger smooth animated content crossfades managed by Jetpack Compose.
 
 ---
 
-## 🎮 Game Mechanics
+## 🎨 Design System
 
-### Phase Flow
-
-```
-START
-  ↓
-SETUP (Player & Category Config)
-  ↓ startGame()
-ROLE_REVEAL (Pass-and-play, each player privately sees role)
-  ↓ startDiscussion()
-DISCUSSION (3-minute countdown)
-  ↓ startVoting() [timer ends or host skips]
-HOST_VOTING (Host selects who to eliminate)
-  ↓ castVote()
-VOTING_RESULTS (Show eliminated players & roles)
-  ↓ checkWinConditions()
-  ├── Win → RESULT (Final outcome)
-  └── Continue → DISCUSSION (Next round, round counter + 1)
-```
-
-### Win Conditions
-
-| Condition | Winner |
-|-----------|--------|
-| All imposters eliminated | **Crewmates** |
-| Active imposters ≥ active crewmates | **Imposters** |
-| ≤ 2 total active players remaining with an imposter | **Imposters** |
-
-### Voting Logic
-
-- `castVote(listOf("SKIP"))` — Skip this round; no elimination
-- `castVote(listOf(id1, id2,...))` — Eliminate up to `activeImpostersCount` players
-- Eliminated players are excluded from future votes
-- `EliminationRecord` logs round number + global elimination order for the results screen
+**IMPSTR** breaks away from standard, boring mobile apps by prioritizing visual excellence:
+- **AMOLED-Optimized Dark Mode**: Black and deep navy gradient meshes prevent eye strain during late-night party sessions.
+- **Expressive Typography**: Bold, aggressive fonts match the tense atmosphere. 
+- **Micro-Animations**: Uses customized Compose spring physics (`DampingRatioMediumBouncy`) for everything from card flips to drag-and-drop mechanics.
 
 ---
 
-## 🎨 Theme & Design System
+## 🔒 Security Enhancements
 
-### Material Design 3
+We take user data seriously, even for party games.
+- **EncryptedSharedPreferences**: Player names, customized rules, and local preferences are encrypted via `MasterKey.KeyScheme.AES256_GCM`.
+- **Manifest Lockdowns**: `android:allowBackup="false"` is strictly enforced, preventing malicious extraction of the applications data stack via ADB operations.
 
-The app uses a full custom Material 3 colour scheme with dark-mode focus:
+---
 
-| Token | Colour | Usage |
-|-------|--------|-------|
-| **Primary** | `#9DB2BF` | Main interaction colour |
-| **Secondary** | `#9BCBCB` | Secondary actions |
-| **Tertiary** | `#BDB2D0` | Accent colour |
-| **Error** | `#B3261E` | Error states |
+## ⚡ Performance Optimizations
 
-### Animation Specs (Motion.kt)
-
-- Default transitions: **200ms** spring with `DampingRatioMediumBouncy`
-- Card flip (RoleReveal): **400ms** Y-axis rotation + opacity swap
-- Vote selection: **200ms** scale + colour transition
-- Screen entry/exit: slide + fade via `NavHost` `AnimatedContentTransition`
-
-### Typography (Type.kt)
-
-Custom font family applied to the full Material 3 type scale — Display through Label sizes.
+1. **Lifecycle Aware Collection**: Replaced legacy StateFlow collections with `collectAsStateWithLifecycle()`. If the user minimizes the app during the 3-minute discussion, the UI cleanly detaches, preserving CPU cycles.
+2. **`@Stable` Annotations**: Collections involving `PlayerState` lists are explicitly declared as immutable, halting redundant recompositions when the fast-ticking timer updates.
 
 ---
 
@@ -402,122 +175,96 @@ Custom font family applied to the full Material 3 type scale — Display through
 
 ### Prerequisites
 
-- **Android Studio** Ladybug or later (recommended)
-- **JDK 17**
-- **Android SDK** with API 31+ installed
-- Gradle is bundled via the wrapper (`gradlew`)
+- **Android Studio** Ladybug (or higher)
+- **JDK 17** integration
+- Minimum API Level 31 (Android 12) targeting API 36.
 
-### Clone & Open
+### Installation
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/knownassurajit/impstr.git
-cd impstr
-```
 
-Open **Android Studio** → `File → Open` → navigate to `impstr/Imposter`
+# 2. Enter directory
+cd IMPSTR
 
-Android Studio will sync Gradle automatically.
-
-### Build & Run (CLI)
-
-```bash
-cd Imposter
-
-# Build debug APK
+# 3. Open in Android Studio or build via CLI
 ./gradlew assembleDebug
 
-# Run unit tests
-./gradlew test
-
-# Install on connected device
+# 4. Install via ADB
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-
-# Launch app
-adb shell am start -n com.game.impstr/.SplashActivity
 ```
 
 ---
 
-## 🏗️ Build & Deployment
+## 🏗️ Build & Testing
 
-### Build Variants
-
-| Variant | Minification | Use |
-|---------|-------------|-----|
-| **debug** | Off | Development & testing |
-| **release** | R8 (minify + shrink) | Production distribution |
-
-### APK Configuration
-
-| Setting | Value |
-|---------|-------|
-| **App ID** | `com.game.impstr` |
-| **Version Name** | 1.0.0.1 |
-| **Version Code** | 2 |
-| **Min SDK** | 31 (Android 12) |
-| **Target SDK** | 36 (Android 16) |
-| **Compile SDK** | 36 |
-
-### Release Build
+The project boasts a robust testing suite verifying edge cases relating to win conditions, player bounds, and cryptographic fallbacks.
 
 ```bash
-./gradlew bundleRelease   # AAB for Play Store
-./gradlew assembleRelease # APK for sideloading
+# Execute local unit tests
+./gradlew testDebugUnitTest
 ```
 
-> **Note**: Configure signing in `app/build.gradle.kts` or via Android Studio's signing wizard before a release build.
+**Project Structure:**
 
----
+```
+├── Resources/
+│   ├── README.md                       # Internal docs index
+│   └── icon_play_store.png             # Play Store icon asset
+│
+└── IMPSTR/                             # Android project root
+    ├── build.gradle.kts                # Project-level plugin versions
+    ├── settings.gradle.kts             # Module inclusion and dependency resolution
+    ├── app/                            # Main application module
+    │   ├── build.gradle.kts            # App-level dependencies and configurations
+    │   └── src/
+    │       ├── main/
+    │       │   ├── AndroidManifest.xml # App permissions and component declarations
+    │       │   ├── java/com/game/impstr/
+    │       │   │   ├── IMPSTRApplication.kt  # Hilt application entry point
+    │       │   │   ├── MainActivity.kt     # Main activity hosting Compose UI
+    │       │   │   ├── data/             # Data sources (e.g., SharedPreferences, word lists)
+    │       │   │   ├── di/               # Dependency Injection modules (Hilt)
+    │       │   │   ├── domain/           # Business logic, UseCases, and core models
+    │       │   │   ├── ui/               # UI layer (Compose screens, ViewModels)
+    │       │   │   └── util/             # Utility functions and extensions
+    │       │   └── res/                # Android resources (layouts, drawables, values)
+    │       └── test/
+    │           └── java/com/game/impstr/ui/viewmodel/
+    │               └── GameViewModelTest.kt        # JUnit 4 unit tests (6 tests)
+    └── gradle/                         # Gradle wrapper files
+```
 
-## 🧪 Testing
+**Tested Scenarios Include:**
+- Player bounds verification (minimum 3, cap logic enforcing max IMPSTRs).
+- Mocked cryptographic fallback capabilities if Android Keystore fails.
+- Winning evaluations for extreme edge cases (e.g. Parity between Crewmates/IMPSTRs).
 
-### Unit Tests
-
-**Framework**: JUnit 4 + Mockito  
-**Location**: `Imposter/app/src/test/java/com/game/impstr/ui/viewmodel/GameViewModelTest.kt`
-
-**6 test cases covering**:
+**Unit Test Coverage:**
 
 | Test | Validates |
 |------|-----------|
 | `initial state is correct` | Default `GameState` values |
-| `updatePlayerCount respects minimums and imposter limits` | Player count boundaries (min 3, imposter ceiling) |
-| `startGame assigns roles correctly` | Correct imposter count assigned randomly |
+| `updatePlayerCount respects minimums and IMPSTR limits` | Player count boundaries (min 3, IMPSTR ceiling) |
+| `startGame assigns roles correctly` | Correct IMPSTR count assigned randomly |
 | `voting eliminates players` | `castVote()` marks player eliminated, transitions to `VOTING_RESULTS` |
-| `win condition - crewmates win` | Eliminating last imposter → `winner = "Crewmates"` |
-| `win condition - imposters win` | Imposters reaching parity → `winner = "Imposters"` |
+| `win condition - crewmates win` | Eliminating last IMPSTR → `winner = "Crewmates"` |
+| `win condition - IMPSTRs win` | IMPSTRs reaching parity → `winner = "IMPSTRs"` |
 
 ```bash
-cd Imposter
-./gradlew test   # All 6 tests pass ✅
+cd IMPSTR
+./gradlew testDebugUnitTest   # All 6 tests pass ✅
 ```
 
-### Manual Test Scenarios
-
-1. **Basic Flow**: 4 players → pick category → start → all reveal → discuss → vote → results
-2. **Crewmate wins**: Vote out imposter on first round
-3. **Imposter wins**: Consistently vote out crewmates until parity
-4. **Skip vote**: Use skip during voting to continue without elimination
-5. **Multiple rounds**: Verify `currentRoundNumber` increments and `eliminationHistory` grows
-6. **Play again**: After result screen → lobby resets player states cleanly
-
 ---
 
-## 📝 License
+## 📝 License & Developer
 
-This project is for educational and personal use. All rights reserved © Surajit Das.
+**Created and Maintained with 💙 by [Surajit Das](https://github.com/knownassurajit)**  
+*This project is built for educational and personal use. All rights reserved © 2026 Surajit Das.*
 
----
-
-## 👨‍💻 Developer
-
-**Surajit Das**  
-Made with 💙 for friends and fellow gamers.
-
----
-
+<br>
 <div align="center">
-
-**Enjoy the game! 🎭**
-
+  <h3>Trust no one. Have fun! 🎭</h3>
 </div>

@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Imposter"
+rootProject.name = "IMPSTR"
 include(":app")

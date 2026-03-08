@@ -14,6 +14,9 @@ import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import javax.inject.Inject
 import kotlin.math.max
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import androidx.compose.runtime.Stable
 
 /**
  * Represents the different phases of the Imposter game.
@@ -51,6 +54,7 @@ data class EliminationRecord(
  * @property hasVoted True if the player has submitted their vote in the current round.
  * @property isEliminated True if the player has been voted out.
  */
+@Stable
 @Parcelize
 data class PlayerState(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -82,6 +86,7 @@ data class PlayerState(
  * @property eliminatedInCurrentRound Players eliminated in the most recent voting phase.
  * @property eliminationHistory Exhaustive list of all eliminations in the game.
  */
+@Stable
 @Parcelize
 data class GameState(
     val phase: GamePhase = GamePhase.SETUP,
@@ -117,7 +122,22 @@ class GameViewModel
         private val shufflePlayersUseCase: com.game.impstr.domain.usecase.ShufflePlayersUseCase,
     ) : ViewModel() {
         private val prefs by lazy {
-            context.getSharedPreferences("imposter_prefs", android.content.Context.MODE_PRIVATE)
+            try {
+                val masterKey = MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+
+                EncryptedSharedPreferences.create(
+                    context,
+                    "imposter_prefs_secure",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (e: Exception) {
+                // Fallback for mocked context in unit tests
+                context.getSharedPreferences("imposter_prefs", android.content.Context.MODE_PRIVATE)
+            }
         }
 
         private val _uiState = MutableStateFlow(GameState())

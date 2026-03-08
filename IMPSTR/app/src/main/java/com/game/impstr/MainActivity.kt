@@ -59,7 +59,7 @@ import com.game.impstr.ui.screens.HomeScreen
 import com.game.impstr.ui.screens.ResultScreen
 import com.game.impstr.ui.screens.RoleRevealScreen
 import com.game.impstr.ui.screens.VotingScreen
-import com.game.impstr.ui.theme.ImposterTheme
+import com.game.impstr.ui.theme.IMPSTRTheme
 import com.game.impstr.ui.viewmodel.GameViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val interactionTime = remember { mutableStateOf(System.currentTimeMillis()) }
 
-            ImposterTheme {
+            IMPSTRTheme {
                 CompositionLocalProvider(LocalInteractionTime provides interactionTime) {
                     Surface(
                         modifier =
