@@ -26,7 +26,8 @@ build_output.txt
 # ── Release bundles / APKs (don't commit signed releases) ────
 *.aab
 *.apk
-Imposter/app/release/
+IMPSTR/app/release/
+IMPSTR/app/build/
 
 # ── Tools ────────────────────────────────────────────────────
 # ktlint CLI binary committed to repo root — exclude from push
@@ -50,5 +51,6 @@ Resources/impstr_logic_engagement_architecture_spec_v3.md
 
 # ── Always track .gitignore files ────────────────────────────
 !.gitignore
-!Imposter/.gitignore
+!IMPSTR/.gitignore
 !.idea/.gitignore
+/Resources/screenshots
