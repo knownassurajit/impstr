@@ -13,6 +13,8 @@ import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -191,4 +193,67 @@ class GameViewModelTest {
         assertEquals("Imposters", viewModel.uiState.value.winner)
         assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
     }
+    @Test
+    fun `discussion timer progresses in one second steps`() = runBlocking {
+        viewModel.startGame()
+        viewModel.startDiscussion()
+
+        assertEquals(0, viewModel.uiState.value.elapsedTime)
+
+        delay(1100)
+        assertEquals(1, viewModel.uiState.value.elapsedTime)
+
+        delay(1000)
+        assertEquals(2, viewModel.uiState.value.elapsedTime)
+    }
+
+    @Test
+    fun `startVoting cancels discussion timer`() = runBlocking {
+        viewModel.startGame()
+        viewModel.startDiscussion()
+
+        delay(1100)
+        val elapsedBeforeVoting = viewModel.uiState.value.elapsedTime
+        assertTrue(elapsedBeforeVoting >= 1)
+
+        viewModel.startVoting()
+        delay(1200)
+
+        assertEquals(elapsedBeforeVoting, viewModel.uiState.value.elapsedTime)
+        assertEquals(GamePhase.HOST_VOTING, viewModel.uiState.value.phase)
+    }
+
+    @Test
+    fun `resetGame cancels timers and resets elapsed time`() = runBlocking {
+        viewModel.startGame()
+        viewModel.startDiscussion()
+
+        delay(1100)
+        assertTrue(viewModel.uiState.value.elapsedTime >= 1)
+
+        viewModel.resetGame()
+        val elapsedAfterReset = viewModel.uiState.value.elapsedTime
+        delay(1200)
+
+        assertEquals(0, elapsedAfterReset)
+        assertEquals(0, viewModel.uiState.value.elapsedTime)
+        assertEquals(GamePhase.SETUP, viewModel.uiState.value.phase)
+    }
+
+    @Test
+    fun `endGame cancels timers and freezes elapsed time`() = runBlocking {
+        viewModel.startGame()
+        viewModel.startDiscussion()
+
+        delay(1100)
+        val elapsedBeforeEnd = viewModel.uiState.value.elapsedTime
+        assertTrue(elapsedBeforeEnd >= 1)
+
+        viewModel.endGame()
+        delay(1200)
+
+        assertEquals(elapsedBeforeEnd, viewModel.uiState.value.elapsedTime)
+        assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
+    }
+
 }

@@ -368,13 +368,13 @@ class GameViewModel
                     while (_uiState.value.phase == GamePhase.DISCUSSION) {
                         val startTime = _uiState.value.roundStartTime
                         if (startTime > 0) {
-                            val elapsed = (System.currentTimeMillis() - startTime) / 1000
-                            if (elapsed != _uiState.value.elapsedTime) {
+                            val elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000
+                            if (elapsedSeconds != _uiState.value.elapsedTime) {
                                 // Only update if changed to avoid excessive recomposition/state updates
-                                updateState { it.copy(elapsedTime = elapsed) }
+                                updateState { it.copy(elapsedTime = elapsedSeconds) }
                             }
                         }
-                        delay(200) // Check more frequently than 1s to be accurate
+                        delay(1000)
                     }
                 }
         }
