@@ -1,6 +1,11 @@
 package com.game.impstr.data
 
 object WordRepository {
+    /**
+     * Canonical local word bank keyed by category.
+     *
+     * The game is fully offline, so this map is the single source of truth for available words.
+     */
     var categories: MutableMap<String, List<String>> =
         mutableMapOf(
             "Random Words" to
@@ -791,13 +796,15 @@ object WordRepository {
                 ),
         )
 
+    /**
+     * Returns a random word for the requested category.
+     *
+     * "Random Words" intentionally samples from every concrete category except itself so the
+     * aggregate pool stays broad without overweighting the pre-mixed fallback list.
+     */
     fun getRandomWord(category: String): String {
         val words =
             if (category == "Random Words") {
-                // Aggregate all words from all categories except "Random Words" itself (to avoid duplicates if it just contains a mix)
-                // The original "Random Words" list seems to be a mix. We can use it or aggregate.
-                // The user request suggests "consider words from other categories".
-                // Implementation: Combine all lists.
                 categories.filterKeys { it != "Random Words" }.values.flatten()
             } else {
                 categories[category] ?: emptyList()
@@ -805,7 +812,4 @@ object WordRepository {
 
         return words.randomOrNull() ?: "Imposter"
     }
-
-    // Network update logic removed as per user request to rely on local data.
-    // To add more words, simply append to the categories map above.
 }

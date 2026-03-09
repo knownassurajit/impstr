@@ -86,7 +86,7 @@ fun VotingScreen(
             )
         }
 
-    // Limit selection to the number of active imposters remaining
+    // Host can eliminate at most one player per active imposter this round.
     val activeImpostersCount = uiState.players.count { !it.isEliminated && it.isImposter }
     val maxSelections = kotlin.math.max(1, activeImpostersCount)
 
@@ -144,14 +144,7 @@ fun VotingScreen(
                                     if (selectedPlayerIds.size < maxSelections) {
                                         selectedPlayerIds + player.id
                                     } else {
-                                        // If we reached max selection, replace the first selected one with new one (or just do nothing? user requirement says "minimum one to totally number of imposters")
-                                        // Let's make it a toggle behavior: if full, remove oldest? No, probably safer to just not add, or clear and add.
-                                        // But standard multi-select usually blocks or replaces.
-                                        // Given it's a game, maybe just block?
-                                        // actually, let's just replace the oldest one if max is 1 (radio button style),
-                                        // but if max > 1, maybe just don't allow more?
-                                        // The user said "total numbers of players can be voted will be minimum one to total number of imposters configured".
-                                        // Let's stick to "if < max, add".
+                                        // Keep interaction deterministic: single-select replaces, multi-select stays capped.
                                         if (maxSelections == 1) {
                                             setOf(player.id)
                                         } else {
@@ -178,7 +171,7 @@ fun VotingScreen(
                             .padding(24.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // Skip Vote Button
+                    // Skip preserves all players for the round and still advances to results.
                     OutlinedButton(
                         onClick = {
                             val currentState = viewModel.uiState.value
@@ -197,7 +190,7 @@ fun VotingScreen(
                         Text("Skip Vote", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
 
-                    // Submit Vote Button
+                    // Submit is gated to at least one explicit target.
                     FilledTonalButton(
                         onClick = {
                             if (selectedPlayerIds.isNotEmpty()) {
@@ -235,13 +228,9 @@ fun VoteCard(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    // If eliminated -> Filled Card (Disabled/Grayed or Status Color)
-    // If Alive -> Outlined Card (Active)
-
     val isEliminated = player.isEliminated
     val isEnabled = !isEliminated
 
-    // Animate Border/Container Color
     val containerColor by animateColorAsState(
         targetValue =
             if (isSelected) {
@@ -266,7 +255,7 @@ fun VoteCard(
             Modifier
                 .fillMaxWidth()
                 .height(180.dp),
-        isOutlined = !isSelected && !isEliminated, // Outlined only if active and not selected
+        isOutlined = !isSelected && !isEliminated,
         containerColor = containerColor,
         borderColor = borderColor,
         onClick = if (isEnabled) onClick else null,

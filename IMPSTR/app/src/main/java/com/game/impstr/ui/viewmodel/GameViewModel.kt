@@ -95,11 +95,10 @@ data class GameState(
     val secretWord: String = "",
     val imposterNames: List<String> = emptyList(),
     val imposterCount: Int = 1,
-    val elapsedTime: Long = 0, // Time elapsed in current phase (seconds)
-    // Removed currentRound since we are single round now - wait, spec says "Track Elimination Record (round, order, player)", so we DO have rounds.
+    val elapsedTime: Long = 0,
     val currentRoundNumber: Int = 1,
-    val roundStartTime: Long = 0, // Timestamp when current phase/round started
-    val totalGameTime: Long = 0, // Total time (seconds)
+    val roundStartTime: Long = 0,
+    val totalGameTime: Long = 0,
     val winner: String? = null,
     // Reveal State
     val currentRevealPlayerIndex: Int = 0,
@@ -135,7 +134,7 @@ class GameViewModel
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
                 )
             } catch (e: Exception) {
-                // Fallback for mocked context in unit tests
+                // Use regular preferences when encrypted storage is unavailable in tests.
                 context.getSharedPreferences("imposter_prefs", android.content.Context.MODE_PRIVATE)
             }
         }
@@ -175,11 +174,11 @@ class GameViewModel
                 if (playerNamesString != null) {
                     playerNamesString.split(";;;").filter { it.isNotEmpty() }.map { PlayerState(name = it) }
                 } else {
-                    // Default 4 players
-                    List(4) { PlayerState(name = "Player ${it + 1}") }
+                // Provide a playable default lobby for first launch.
+                List(4) { PlayerState(name = "Player ${it + 1}") }
                 }
 
-            // Validate loaded imposter count
+            // Clamp persisted values to the current roster size.
             val maxImposters = max(1, players.size - 1)
             val safeImposterCount = imposterCount.coerceIn(1, maxImposters)
 
@@ -210,7 +209,7 @@ class GameViewModel
          * @param count The target number of total players.
          */
         fun updatePlayerCount(count: Int) {
-            val safeCount = max(3, count) // Ensure minimum 3 players
+            val safeCount = max(3, count)
             updateState { currentState ->
                 val currentPlayers = currentState.players
                 val newPlayers =
@@ -223,8 +222,7 @@ class GameViewModel
                         currentPlayers.take(safeCount)
                     }
 
-                // Validate imposter count with new player count
-                // Imposter count must be at least 1 and less than player count
+                // Keep imposter count valid after roster size changes.
                 val maxImposters = max(1, newPlayers.size - 1)
                 val currentImposterCount = currentState.imposterCount
                 val newImposterCount = currentImposterCount.coerceIn(1, maxImposters)
@@ -239,7 +237,6 @@ class GameViewModel
 
         fun updateImposterCount(count: Int) {
             val playerCount = _uiState.value.players.size
-            // Ensure count is valid: 1 <= count < playerCount
             val maxImposters = max(1, playerCount - 1)
             val safeCount = count.coerceIn(1, maxImposters)
 
@@ -271,14 +268,12 @@ class GameViewModel
          * and transitioning to the [GamePhase.ROLE_REVEAL] phase.
          */
         fun startGame() {
-            // Use all players currently in the lobby
             val players = _uiState.value.players
 
             if (players.size < 3) return
 
             val imposterCount = _uiState.value.imposterCount
 
-            // Use UseCase
             val updatedPlayers = shufflePlayersUseCase(players, imposterCount)
             val imposterNames = updatedPlayers.filter { it.isImposter }.map { it.name }
 
@@ -370,11 +365,11 @@ class GameViewModel
                         if (startTime > 0) {
                             val elapsed = (System.currentTimeMillis() - startTime) / 1000
                             if (elapsed != _uiState.value.elapsedTime) {
-                                // Only update if changed to avoid excessive recomposition/state updates
+                                // Avoid redundant state writes that trigger unnecessary recomposition.
                                 updateState { it.copy(elapsedTime = elapsed) }
                             }
                         }
-                        delay(200) // Check more frequently than 1s to be accurate
+                        delay(200)
                     }
                 }
         }
@@ -384,12 +379,11 @@ class GameViewModel
          * Halts the discussion phase timer, but keeps the total game timer running.
          */
         fun startVoting() {
-            timerJob?.cancel() // Cancel phase timer
+            timerJob?.cancel()
             updateState { currentState ->
                 if (currentState.phase != GamePhase.DISCUSSION) return@updateState currentState
                 currentState.copy(
                     phase = GamePhase.HOST_VOTING,
-                    // totalGameTime continues updating via gameTimerJob
                 )
             }
         }
@@ -397,6 +391,11 @@ class GameViewModel
         /**
          * Casts the host's votes to eliminate players or skip the vote.
          * Transitions the game to [GamePhase.VOTING_RESULTS] and records eliminations.
+         *
+         * Rule notes:
+         * - Skip votes never eliminate players and still advance to results.
+         * - Elimination count per round is capped at the number of active imposters.
+         *   This keeps vote impact proportional to the hidden threat currently in play.
          *
          * @param votedForIds A list of player IDs selected for elimination, or ["SKIP"].
          */
@@ -418,7 +417,6 @@ class GameViewModel
                 return
             }
 
-            // Enforce limitation limits
             val maxEliminations = max(1, activeImpostersCount)
             val validVotedForIds = votedForIds.take(maxEliminations)
 
@@ -477,6 +475,14 @@ class GameViewModel
             endGame()
         }
 
+        /**
+         * Evaluates win conditions using deterministic precedence so edge cases resolve consistently.
+         *
+         * Precedence:
+         * 1. Crewmates win immediately when no active imposters remain.
+         * 2. Imposters win if only two active players remain and at least one is an imposter.
+         * 3. Otherwise, imposters win when they reach parity with crewmates.
+         */
         private fun checkWinConditions(autoEnd: Boolean = true): Boolean {
             val activePlayers = _uiState.value.players.filter { !it.isEliminated }
             val activeImposters = activePlayers.filter { it.isImposter }
@@ -485,7 +491,7 @@ class GameViewModel
             val winner =
                 when {
                     activeImposters.isEmpty() -> "Crewmates"
-                    activePlayers.size <= 2 && activeImposters.isNotEmpty() -> "Imposters" // Min viable players reached
+                    activePlayers.size <= 2 && activeImposters.isNotEmpty() -> "Imposters"
                     activeImposters.size >= activeCrewmates.size -> "Imposters"
                     else -> null
                 }
@@ -507,10 +513,10 @@ class GameViewModel
             val state = _uiState.value
             if (state.phase == GamePhase.RESULT || state.phase == GamePhase.SETUP) return
 
-            gameTimerJob?.cancel() // Stop global timer
+            gameTimerJob?.cancel()
             timerJob?.cancel()
             if (state.winner == null) {
-                // Force end
+                // Forced endings still map to a valid winner for result-screen consistency.
                 val activePlayers = state.players.filter { !it.isEliminated }
                 val activeImposters = activePlayers.filter { it.isImposter }
                 val winner = if (activeImposters.isEmpty()) "Crewmates" else "Imposters"
@@ -534,7 +540,6 @@ class GameViewModel
             toIndex: Int,
         ) {
             val players = _uiState.value.players.toMutableList()
-            // Simple reorder logic
             val item = players.removeAt(fromIndex)
             players.add(toIndex, item)
             updateState { it.copy(players = players) }
@@ -549,14 +554,8 @@ class GameViewModel
         fun resetGame() {
             timerJob?.cancel()
             gameTimerJob?.cancel()
-            // Reload config to get original players list order/state?
-            // Or keep current players but reset game state?
-            // User said "go to lobby" -> usually implies resetting game-specifics but keeping lobby config.
-            // My loadConfig() handles this init.
-            // We can just reset game flags.
-
             updateState { currentState ->
-                // Reset players to initial state (not eliminated, not imposter)
+                // Keep lobby identities while removing transient round-specific flags.
                 val resetPlayers =
                     currentState.players.map { p ->
                         p.copy(
@@ -569,8 +568,8 @@ class GameViewModel
 
                 GameState(
                     players = resetPlayers,
-                    category = currentState.category, // Keep category
-                    imposterCount = currentState.imposterCount, // Keep count
+                    category = currentState.category,
+                    imposterCount = currentState.imposterCount,
                     phase = GamePhase.SETUP,
                     elapsedTime = 0,
                     currentRoundNumber = 1,
