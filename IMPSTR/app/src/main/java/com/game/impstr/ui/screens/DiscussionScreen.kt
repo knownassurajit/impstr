@@ -122,16 +122,31 @@ fun DiscussionScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             com.game.impstr.ui.components.TimerDisplay(
-                                seconds = uiState.totalGameTime,
+                                seconds = uiState.elapsedTime,
                                 style = MaterialTheme.typography.displayLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = "TOTAL TIME",
+                                text = "DISCUSSION TIME",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 2.sp,
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            com.game.impstr.ui.components.TimerDisplay(
+                                seconds = uiState.totalGameTime,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = "TOTAL GAME TIME",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.5.sp,
                             )
                         }
                     }

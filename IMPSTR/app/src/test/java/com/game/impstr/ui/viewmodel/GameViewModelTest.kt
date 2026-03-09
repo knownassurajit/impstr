@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.rules.TestWatcher
@@ -190,5 +192,43 @@ class GameViewModelTest {
         // check win
         assertEquals("Imposters", viewModel.uiState.value.winner)
         assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
+    }
+
+    @Test
+    fun `discussion timer resets per phase while total time continues across transitions`() = runTest {
+        viewModel.startGame()
+
+        // Let global game timer tick before entering discussion
+        advanceTimeBy(1200)
+
+        viewModel.startDiscussion()
+        advanceTimeBy(2200)
+
+        val duringDiscussion = viewModel.uiState.value
+        assertEquals(GamePhase.DISCUSSION, duringDiscussion.phase)
+        assertTrue(duringDiscussion.elapsedTime >= 2)
+        assertTrue(duringDiscussion.totalGameTime >= 3)
+
+        viewModel.startVoting()
+        val inVoting = viewModel.uiState.value
+        assertEquals(GamePhase.HOST_VOTING, inVoting.phase)
+
+        // Continue to let total timer advance while discussion timer is halted
+        advanceTimeBy(1100)
+        val afterVotingTick = viewModel.uiState.value
+        assertTrue(afterVotingTick.totalGameTime > duringDiscussion.totalGameTime)
+        assertEquals(inVoting.elapsedTime, afterVotingTick.elapsedTime)
+
+        // Move through voting results back into next discussion round
+        viewModel.castVote(listOf("SKIP"))
+        assertEquals(GamePhase.VOTING_RESULTS, viewModel.uiState.value.phase)
+
+        viewModel.startNextVotingRound()
+        val nextDiscussionStart = viewModel.uiState.value
+        assertEquals(GamePhase.DISCUSSION, nextDiscussionStart.phase)
+        assertEquals(0, nextDiscussionStart.elapsedTime)
+
+        advanceTimeBy(1200)
+        assertTrue(viewModel.uiState.value.elapsedTime >= 1)
     }
 }
