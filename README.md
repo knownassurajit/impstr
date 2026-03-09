@@ -204,7 +204,18 @@ The project boasts a robust testing suite verifying edge cases relating to win c
 ```bash
 # Execute local unit tests
 ./gradlew testDebugUnitTest
+
+# Run lint checks (release lint is enforced and fails the build on any error)
+./gradlew lint
 ```
+
+### Lint policy (release quality gate)
+
+- `IMPSTR/app/build.gradle.kts` enforces `checkReleaseBuilds = true` and `abortOnError = true`.
+- Do **not** globally disable lint checks for production builds.
+- If an unavoidable warning appears, prefer a narrowly scoped fix:
+  - add a targeted `@SuppressLint`/`tools:ignore` only where needed, or
+  - add/update a lint baseline for known, reviewed issues while keeping release lint enforcement enabled.
 
 **Project Structure:**
 
