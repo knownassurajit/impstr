@@ -1,7 +1,7 @@
 package com.game.impstr.data
 
 object WordRepository {
-    var categories: MutableMap<String, List<String>> =
+    private var categoriesInternal: MutableMap<String, List<String>> =
         mutableMapOf(
             "Random Words" to
                 listOf(
@@ -791,16 +791,37 @@ object WordRepository {
                 ),
         )
 
+    val categories: Map<String, List<String>>
+        get() = categoriesInternal
+
+    private var allNonRandomWords: List<String> = buildAllNonRandomWords()
+
+    private fun buildAllNonRandomWords(): List<String> =
+        categoriesInternal
+            .filterKeys { it != RANDOM_WORDS_CATEGORY }
+            .values
+            .flatten()
+
+    fun updateCategories(newCategories: Map<String, List<String>>) {
+        categoriesInternal = newCategories.toMutableMap()
+        allNonRandomWords = buildAllNonRandomWords()
+    }
+
+    fun updateCategory(category: String, words: List<String>) {
+        categoriesInternal[category] = words
+        allNonRandomWords = buildAllNonRandomWords()
+    }
+
+    private companion object {
+        const val RANDOM_WORDS_CATEGORY = "Random Words"
+    }
+
     fun getRandomWord(category: String): String {
         val words =
-            if (category == "Random Words") {
-                // Aggregate all words from all categories except "Random Words" itself (to avoid duplicates if it just contains a mix)
-                // The original "Random Words" list seems to be a mix. We can use it or aggregate.
-                // The user request suggests "consider words from other categories".
-                // Implementation: Combine all lists.
-                categories.filterKeys { it != "Random Words" }.values.flatten()
+            if (category == RANDOM_WORDS_CATEGORY) {
+                allNonRandomWords
             } else {
-                categories[category] ?: emptyList()
+                categoriesInternal[category] ?: emptyList()
             }
 
         return words.randomOrNull() ?: "Imposter"
