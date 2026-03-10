@@ -1,11 +1,6 @@
 package com.game.impstr.ui.screens
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.game.impstr.data.WordRepository
+import com.game.impstr.ui.components.ImpstrLogo
 import com.game.impstr.ui.components.SplitButton
 import com.game.impstr.ui.theme.*
 import com.game.impstr.ui.viewmodel.GameViewModel
@@ -131,60 +127,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "blink")
-                    
-                    val cursorAlpha by infiniteTransition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = 0f,
-                        animationSpec = infiniteRepeatable(
-                            animation = keyframes {
-                                durationMillis = 1200
-                                1f at 0
-                                1f at 588
-                                0f at 600
-                                0f at 1200
-                            },
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "cursorAlpha"
-                    )
-                    
-                    val textStyle = MaterialTheme.typography.displayMedium.copy(
-                        fontFamily = LogoFont,
-                        letterSpacing = 2.sp,
-                    )
-                    
-                    Text(
-                        text = "I",
-                        style = textStyle,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Black,
-                    )
-                    
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .padding(horizontal = 2.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF3B82F6).copy(alpha = cursorAlpha))
-                            .padding(horizontal = 4.dp)
-                    ) {
-                        Text(
-                            text = "M",
-                            style = textStyle,
-                            color = if (cursorAlpha > 0.5f) Color.Black else MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Black,
-                        )
-                    }
-                    
-                    Text(
-                        text = "PSTR",
-                        style = textStyle,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Black,
-                    )
-                }
+                ImpstrLogo()
                 IconButton(onClick = { isHelpVisible = true }) { // Trigger side sheet
                     Icon(
                         Icons.Rounded.Info,
