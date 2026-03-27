@@ -6,6 +6,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -32,10 +33,12 @@ import com.game.impstr.ui.theme.LogoFont
  * - 1200ms infinite blink cycle matching SVG keyframes:
  *     visible 0–588ms → hidden 600–1200ms
  * - "M" fill toggles black ↔ onBackground in sync with cursor
+ * - Clickable: tapping the logo triggers the [onClick] callback.
  */
 @Composable
 fun ImpstrLogo(
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
     textStyle: TextStyle = MaterialTheme.typography.displayMedium.copy(
         fontFamily = LogoFont,
         letterSpacing = 2.sp,
@@ -61,7 +64,7 @@ fun ImpstrLogo(
     )
 
     Row(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // "I"

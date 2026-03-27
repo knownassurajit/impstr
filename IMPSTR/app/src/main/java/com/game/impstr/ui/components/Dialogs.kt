@@ -70,7 +70,7 @@ fun HelpItem(
     Row(verticalAlignment = Alignment.Top) {
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.small,
             modifier = Modifier.padding(top = 2.dp),
         ) {
             Text(
@@ -104,7 +104,7 @@ fun ExitConfirmationDialog(
         modifier = Modifier.padding(24.dp),
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp,
             modifier = Modifier.fillMaxWidth(),

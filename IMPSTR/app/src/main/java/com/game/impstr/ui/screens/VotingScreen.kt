@@ -169,7 +169,7 @@ fun VotingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 tonalElevation = 8.dp,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                shape = com.game.impstr.ui.theme.Corners.BottomBar,
             ) {
                 Row(
                     modifier =
@@ -303,7 +303,7 @@ fun VoteCard(
                 Surface(
                     modifier = Modifier.align(Alignment.TopStart),
                     color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = com.game.impstr.ui.theme.Corners.Badge,
                 ) {
                     Text(
                         "ELIMINATED",

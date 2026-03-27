@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.game.impstr.ui.components.KeepScreenOn
+import com.game.impstr.ui.theme.Dimens
+import com.game.impstr.ui.theme.Anim
 
 @Composable
 fun DiscussionScreen(
@@ -71,7 +73,7 @@ fun DiscussionScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(Dimens.ScreenHorizontal),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Header
@@ -101,11 +103,11 @@ fun DiscussionScreen(
             // Timer Circle
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(280.dp),
+                modifier = Modifier.size(Dimens.TimerCircleOuter),
             ) {
                 // Timer Display Card
                 ElevatedCard(
-                    modifier = Modifier.size(240.dp),
+                    modifier = Modifier.size(Dimens.TimerCircleInner),
                     shape = CircleShape,
                     colors =
                         CardDefaults.elevatedCardColors(
@@ -152,7 +154,7 @@ fun DiscussionScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(Dimens.ButtonHeight),
                 shape = MaterialTheme.shapes.medium,
                 colors =
                     ButtonDefaults.filledTonalButtonColors(

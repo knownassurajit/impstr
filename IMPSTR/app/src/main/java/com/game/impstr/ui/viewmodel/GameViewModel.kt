@@ -95,6 +95,8 @@ data class GameState(
     val secretWord: String = "",
     val imposterNames: List<String> = emptyList(),
     val imposterCount: Int = 1,
+    val isStealthMode: Boolean = false, // Stealth: imposters get a different word
+    val imposterWord: String = "", // The decoy word imposters see in stealth mode
     val elapsedTime: Long = 0, // Time elapsed in current phase (seconds)
     // Removed currentRound since we are single round now - wait, spec says "Track Elimination Record (round, order, player)", so we DO have rounds.
     val currentRoundNumber: Int = 1,
@@ -169,6 +171,7 @@ class GameViewModel
         private fun loadConfig() {
             val category = prefs.getString("category", "Random Words") ?: "Random Words"
             val imposterCount = prefs.getInt("imposter_count", 1)
+            val stealthMode = prefs.getBoolean("stealth_mode", false)
             val playerNamesString = prefs.getString("player_names", null)
 
             val players =
@@ -187,6 +190,7 @@ class GameViewModel
                 it.copy(
                     category = category,
                     imposterCount = safeImposterCount,
+                    isStealthMode = stealthMode,
                     players = players,
                 )
             }
@@ -198,6 +202,7 @@ class GameViewModel
             prefs.edit().apply {
                 putString("category", state.category)
                 putInt("imposter_count", state.imposterCount)
+                putBoolean("stealth_mode", state.isStealthMode)
                 putString("player_names", names)
                 apply()
             }
@@ -252,6 +257,11 @@ class GameViewModel
             saveConfig()
         }
 
+        fun setStealthMode(enabled: Boolean) {
+            updateState { it.copy(isStealthMode = enabled) }
+            saveConfig()
+        }
+
         fun updatePlayerName(
             index: Int,
             name: String,
@@ -277,12 +287,24 @@ class GameViewModel
             if (players.size < 3) return
 
             val imposterCount = _uiState.value.imposterCount
+            val isStealth = _uiState.value.isStealthMode
 
             // Use UseCase
             val updatedPlayers = shufflePlayersUseCase(players, imposterCount)
             val imposterNames = updatedPlayers.filter { it.isImposter }.map { it.name }
 
-            val word = WordRepository.getRandomWord(_uiState.value.category)
+            val category = _uiState.value.category
+            val word: String
+            val decoyWord: String
+
+            if (isStealth) {
+                val pair = WordRepository.getRandomWordPair(category)
+                word = pair.first
+                decoyWord = pair.second
+            } else {
+                word = WordRepository.getRandomWord(category)
+                decoyWord = ""
+            }
 
             updateState { currentState ->
                 if (currentState.phase != GamePhase.SETUP) return@updateState currentState
@@ -291,6 +313,7 @@ class GameViewModel
                     players = updatedPlayers,
                     imposterNames = imposterNames,
                     secretWord = word,
+                    imposterWord = decoyWord,
                     elapsedTime = 0,
                     currentRoundNumber = 1,
                     roundStartTime = 0,
@@ -571,6 +594,7 @@ class GameViewModel
                     players = resetPlayers,
                     category = currentState.category, // Keep category
                     imposterCount = currentState.imposterCount, // Keep count
+                    isStealthMode = currentState.isStealthMode, // Keep stealth mode
                     phase = GamePhase.SETUP,
                     elapsedTime = 0,
                     currentRoundNumber = 1,

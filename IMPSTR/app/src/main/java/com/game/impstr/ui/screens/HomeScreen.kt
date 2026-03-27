@@ -26,6 +26,7 @@ import com.game.impstr.data.WordRepository
 import com.game.impstr.ui.components.ImpstrLogo
 import com.game.impstr.ui.components.SplitButton
 import com.game.impstr.ui.theme.*
+import com.game.impstr.ui.theme.Dimens
 import com.game.impstr.ui.viewmodel.GameViewModel
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.ReorderableItem
@@ -52,7 +53,7 @@ fun HomeScreen(
     var showPlayerConfig by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf<Int?>(null) }
-    var isHelpVisible by remember { mutableStateOf(false) } // Local state for SideSheet
+    var isHelpVisible by remember { mutableStateOf(false) } // Local state for HelpDialog
 
     // Map ViewModel PlayerState to UI LobbyPlayer
     val players =
@@ -116,7 +117,7 @@ fun HomeScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = Dimens.ScreenHorizontal),
         ) {
             // Header
             Row(
@@ -127,12 +128,35 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ImpstrLogo()
-                IconButton(onClick = { isHelpVisible = true }) { // Trigger side sheet
-                    Icon(
-                        Icons.Rounded.Info,
-                        contentDescription = "Help",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                ImpstrLogo(onClick = { isHelpVisible = true })
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+                ) {
+                    Text(
+                        text = if (uiState.isStealthMode) "Stealth" else "Normal",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Switch(
+                        checked = uiState.isStealthMode,
+                        onCheckedChange = { viewModel.setStealthMode(it) },
+                        thumbContent = {
+                            Icon(
+                                imageVector = if (uiState.isStealthMode) Icons.Rounded.Check else Icons.Rounded.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                            )
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            checkedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
                     )
                 }
             }

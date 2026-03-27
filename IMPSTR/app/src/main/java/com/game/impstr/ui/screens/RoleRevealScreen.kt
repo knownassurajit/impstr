@@ -48,6 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.game.impstr.ui.theme.Anim
+import com.game.impstr.ui.theme.Dimens
+import com.game.impstr.ui.theme.GameColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -75,6 +78,8 @@ fun RoleRevealScreen(
 
     val isImposter = currentPlayer.isImposter
     val secretWord = uiState.secretWord
+    val imposterWord = uiState.imposterWord
+    val isStealth = uiState.isStealthMode
     val category = uiState.category
 
     val isLastPlayer = currentIndex == uiState.players.size - 1
@@ -104,8 +109,10 @@ fun RoleRevealScreen(
         )
     }
 
-    val gradientStart = if (isFlipped && isImposter) Color(0xFF450a0a) else Color(0xFF1e1b4b)
-    val gradientEnd = if (isFlipped && isImposter) Color(0xFF000000) else Color(0xFF0f172a)
+    // In stealth mode, imposters see a normal card (no red gradient hint)
+    val showRedGradient = isFlipped && isImposter && !isStealth
+    val gradientStart = if (showRedGradient) GameColors.CardGradientRedStart else GameColors.CardGradientBlueStart
+    val gradientEnd = if (showRedGradient) GameColors.CardGradientRedEnd else GameColors.CardGradientBlueEnd
 
     val bgBrush =
         Brush.verticalGradient(
@@ -299,8 +306,30 @@ fun RoleRevealScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                // Determine card content based on stealth mode
+                                val cardLabel: String
+                                val cardWord: String
+                                val cardWordColor: Color
+
+                                if (isImposter && !isStealth) {
+                                    // Classic mode: explicit imposter reveal
+                                    cardLabel = "YOU ARE THE"
+                                    cardWord = "IMPOSTER"
+                                    cardWordColor = GameColors.ImposterRed
+                                } else if (isImposter && isStealth) {
+                                    // Stealth mode: imposter gets a different word (looks normal)
+                                    cardLabel = "THE SECRET WORD IS"
+                                    cardWord = imposterWord
+                                    cardWordColor = Color.White
+                                } else {
+                                    // Crewmate
+                                    cardLabel = "THE SECRET WORD IS"
+                                    cardWord = secretWord
+                                    cardWordColor = Color.White
+                                }
+
                                 Text(
-                                    if (isImposter) "YOU ARE THE" else "THE SECRET WORD IS",
+                                    cardLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.White.copy(alpha = 0.5f),
                                     letterSpacing = 2.sp,
@@ -308,9 +337,9 @@ fun RoleRevealScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    if (isImposter) "IMPOSTER" else secretWord,
+                                    cardWord,
                                     style = MaterialTheme.typography.displayMedium,
-                                    color = if (isImposter) Color(0xFFef4444) else Color.White,
+                                    color = cardWordColor,
                                     fontWeight = FontWeight.Black,
                                     textAlign = TextAlign.Center,
                                 )
@@ -372,7 +401,7 @@ fun RoleRevealScreen(
                     Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors =
                     androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,

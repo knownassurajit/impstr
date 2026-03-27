@@ -38,6 +38,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.game.impstr.ui.theme.Corners
+import com.game.impstr.ui.theme.Dimens
+import com.game.impstr.ui.theme.GameColors
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
@@ -59,7 +62,7 @@ fun ResultScreen(
             Brush.verticalGradient(
                 colors =
                     listOf(
-                        Color(0xFF064e3b).copy(alpha = 0.3f),
+                        GameColors.WinGradientGreenStart.copy(alpha = 0.3f),
                         MaterialTheme.colorScheme.background,
                     ),
             )
@@ -67,7 +70,7 @@ fun ResultScreen(
             Brush.verticalGradient(
                 colors =
                     listOf(
-                        Color(0xFF7f1d1d).copy(alpha = 0.3f),
+                        GameColors.WinGradientRedStart.copy(alpha = 0.3f),
                         MaterialTheme.colorScheme.background,
                     ),
             )
@@ -119,21 +122,26 @@ fun ResultScreen(
                     .background(bgGradient),
         ) {
             Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
+                // Scrollable content
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimens.ScreenHorizontal)
+                            .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top,
+                ) {
+                    Spacer(modifier = Modifier.height(Dimens.ScreenVertical))
 
                 // Top-Middle Duration
                 val totalMinutes = uiState.totalGameTime / 60
                 val totalSeconds = uiState.totalGameTime % 60
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
                 ) {
                     Text(
@@ -217,7 +225,7 @@ fun ResultScreen(
 
                         // Winner Badge
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                             color = cardColor.copy(alpha = 0.15f),
                         ) {
                             Text(
@@ -233,7 +241,7 @@ fun ResultScreen(
 
                         // ALWAYS Show Secret Word & Category
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
@@ -253,6 +261,24 @@ fun ResultScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
+
+                                // In stealth mode, also reveal the imposter's decoy word
+                                if (uiState.isStealthMode && uiState.imposterWord.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "IMPOSTER'S WORD WAS",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GameColors.ImposterRedDim,
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.SpacingXs))
+                                    Text(
+                                        text = uiState.imposterWord,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GameColors.ImposterRed,
+                                    )
+                                }
+
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Category: ${uiState.category}",
@@ -294,7 +320,7 @@ fun ResultScreen(
                             uiState.eliminationHistory.forEach { record ->
                                 Surface(
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.small,
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 ) {
                                     Text(
@@ -310,30 +336,37 @@ fun ResultScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Play Again Button
-                FilledTonalButton(
-                    onClick = onPlayAgain,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
-                ) {
-                    Text(
-                        "Play Again",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                // Pinned Bottom Bar — Play Again
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = Dimens.ElevationHigh,
+                    shape = Corners.BottomBar,
+                ) {
+                    FilledTonalButton(
+                        onClick = onPlayAgain,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(Dimens.BottomBarPadding)
+                                .height(Dimens.ButtonHeight),
+                        shape = MaterialTheme.shapes.medium,
+                        colors =
+                            androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                    ) {
+                        Text(
+                            "Play Again",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
             }
         }
     }

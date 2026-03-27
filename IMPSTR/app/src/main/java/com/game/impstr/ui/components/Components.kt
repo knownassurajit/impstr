@@ -124,7 +124,7 @@ fun ModalSideSheet(
                         .width(320.dp) // Fixed width for side sheet
                         .clickable(enabled = false) {},
                 // Prevent clicks passing through
-                shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp),
+                shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp), // SideSheet specific
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 6.dp,
             ) {

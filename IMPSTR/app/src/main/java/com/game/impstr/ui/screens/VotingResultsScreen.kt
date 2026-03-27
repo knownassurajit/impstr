@@ -261,7 +261,7 @@ fun VotingResultsScreen(
 @Composable
 fun EliminatedPlayerCard(player: PlayerState) {
     val isImposter = player.isImposter
-    val backgroundColor = if (isImposter) Color(0xFF4CAF50) else MaterialTheme.colorScheme.errorContainer
+    val backgroundColor = if (isImposter) com.game.impstr.ui.theme.GameColors.CrewmateGreen else MaterialTheme.colorScheme.errorContainer
     val contentColor = if (isImposter) Color.White else MaterialTheme.colorScheme.onErrorContainer
 
     ElevatedCard(

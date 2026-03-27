@@ -191,4 +191,26 @@ class GameViewModelTest {
         assertEquals("Imposters", viewModel.uiState.value.winner)
         assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
     }
+
+    @Test
+    fun `stealth mode assigns distinct words for imposters`() {
+        // Enable Stealth Mode
+        viewModel.setStealthMode(true)
+        assertTrue(viewModel.uiState.value.isStealthMode)
+        
+        // Start game
+        viewModel.startGame()
+        
+        val state = viewModel.uiState.value
+        assertEquals(GamePhase.ROLE_REVEAL, state.phase)
+        
+        // In Stealth Mode, imposterWord should be present and distinct from secretWord
+        assertNotNull(state.imposterWord)
+        assertTrue(state.imposterWord.isNotEmpty())
+        assertNotEquals(state.secretWord, state.imposterWord)
+        
+        // Verify all imposters see a word (revealed role word is tested in UI but logic check here)
+        val imposters = state.players.filter { it.isImposter }
+        assertTrue(imposters.isNotEmpty())
+    }
 }

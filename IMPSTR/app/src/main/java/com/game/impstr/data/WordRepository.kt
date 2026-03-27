@@ -806,6 +806,24 @@ object WordRepository {
         return words.randomOrNull() ?: "Imposter"
     }
 
+    /**
+     * Returns a pair of two distinct random words from the given category.
+     * Used in stealth mode: first = crewmate word, second = imposter decoy word.
+     */
+    fun getRandomWordPair(category: String): Pair<String, String> {
+        val words =
+            if (category == "Random Words") {
+                categories.filterKeys { it != "Random Words" }.values.flatten()
+            } else {
+                categories[category] ?: emptyList()
+            }
+
+        if (words.size < 2) return Pair(words.firstOrNull() ?: "Imposter", "Decoy")
+
+        val shuffled = words.shuffled()
+        return Pair(shuffled[0], shuffled[1])
+    }
+
     // Network update logic removed as per user request to rely on local data.
     // To add more words, simply append to the categories map above.
 }
