@@ -127,7 +127,7 @@ fun RoleRevealScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
+                    .padding(Dimens.ScreenHorizontal),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Top Bar
@@ -161,11 +161,11 @@ fun RoleRevealScreen(
             }
 
             // Progress Indicator
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
             val animatedProgress by animateFloatAsState(
                 targetValue = progress,
-                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+                animationSpec = tween(durationMillis = Anim.DurationMedium, easing = Anim.EmphasizedEasing),
                 label = "progress",
             )
 
@@ -174,14 +174,14 @@ fun RoleRevealScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(8.dp) // Slightly taller for expressive
-                        .clip(RoundedCornerShape(4.dp)),
+                        .height(Dimens.SpacingSm) // Slightly taller for expressive
+                        .clip(MaterialTheme.shapes.extraSmall),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
             // Instruction Text
             Box(
@@ -232,7 +232,7 @@ fun RoleRevealScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
             // 3D Flip Card
             com.game.impstr.ui.components.FlipCard(
@@ -373,7 +373,7 @@ fun RoleRevealScreen(
                 },
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
             // Action Button
             FilledTonalButton(
@@ -386,8 +386,8 @@ fun RoleRevealScreen(
                             isFlipped = false
                             isTransitioning = true // Update text immediately
                             scope.launch {
-                                // Wait for flip to complete (400ms) then change player
-                                delay(400)
+                                // Wait for flip to complete
+                                delay(Anim.DurationCardFlip.toLong())
                                 viewModel.nextPlayerReveal()
                                 isTransitioning = false
                             }
@@ -400,7 +400,7 @@ fun RoleRevealScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(Dimens.ButtonHeight),
                 shape = MaterialTheme.shapes.medium,
                 colors =
                     androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(

@@ -61,7 +61,7 @@ fun HomeScreen(
             LobbyPlayer(
                 id = playerState.id,
                 name = playerState.name,
-                avatarColor = PlayerColors[index % PlayerColors.size], // Use varied vibrant colors
+                avatarColor = if (uiState.isStealthMode) StealthPlayerColors[index % StealthPlayerColors.size] else PlayerColors[index % PlayerColors.size],
                 isReady = playerState.isReady,
                 isHost = index == 0,
                 isMe = index == 0,
@@ -136,7 +136,7 @@ fun HomeScreen(
                     Text(
                         text = if (uiState.isStealthMode) "Stealth" else "Normal",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (uiState.isStealthMode) StealthLime else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Switch(
@@ -164,12 +164,12 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpacingXs),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLg),
             ) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    color = CardYellow,
+                    color = if (uiState.isStealthMode) StealthPurple else CardYellow,
                     icon = Icons.Rounded.Person,
                     label = "Players",
                     value = "${uiState.imposterCount}/${players.size}",
@@ -178,7 +178,7 @@ fun HomeScreen(
                 )
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    color = CardTeal,
+                    color = if (uiState.isStealthMode) StealthLime else CardTeal,
                     icon = Icons.Rounded.Category,
                     label = "Category",
                     value = uiState.category,
@@ -187,7 +187,7 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
             // Players List Header
             Row(
@@ -236,7 +236,7 @@ fun HomeScreen(
                     Modifier
                         .weight(1f)
                         .reorderable(state),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(players, key = { it.id }) { player ->
                     ReorderableItem(
@@ -339,7 +339,7 @@ fun HomeScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(Dimens.ButtonHeight),
                 shape = MaterialTheme.shapes.medium,
                 colors =
                     ButtonDefaults.filledTonalButtonColors(
@@ -641,7 +641,7 @@ fun InfoCard(
 ) {
     ElevatedCard(
         onClick = onClick,
-        modifier = modifier.height(110.dp),
+        modifier = modifier.height(112.dp),
         shape = MaterialTheme.shapes.medium,
         colors =
             CardDefaults.elevatedCardColors(
@@ -656,7 +656,7 @@ fun InfoCard(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(Dimens.SpacingLg),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
