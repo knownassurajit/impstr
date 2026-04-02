@@ -63,3 +63,27 @@ val PlayerColors =
         CardBlue,
         CardPink,
     )
+
+// Stealth Mode Neon Colors
+val StealthBlack = Color(0xFF000000)
+val StealthSurface = Color(0xFF050505)
+val StealthSurfaceVariant = Color(0xFF111111)
+val StealthViolet = Color(0xFF8A2BE2)  // Violet
+val StealthPurple = Color(0xFFB026FF)  // Purple
+val StealthLime = Color(0xFF39FF14)    // Neon Lime
+val StealthWhite = Color(0xFFFFFFFF)   // White
+val StealthOnLime = Color(0xFF000000)  // Black text on Lime
+val StealthOnPurple = Color(0xFFFFFFFF) // White text on Purple
+val StealthError = Color(0xFFFF003C)   // Neon Red for errors
+
+val StealthPlayerColors =
+    listOf(
+        StealthLime,
+        StealthPurple,
+        StealthViolet,
+        StealthError, // Red
+        Color(0xFF00FFFF), // Cyan
+        Color(0xFFFF00FF), // Magenta
+        Color(0xFFFFFF00), // Yellow
+        Color(0xFFFF5F00), // Orange
+    )

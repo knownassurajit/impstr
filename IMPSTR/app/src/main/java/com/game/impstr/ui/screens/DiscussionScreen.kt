@@ -90,7 +90,7 @@ fun DiscussionScreen(
                     letterSpacing = 1.5.sp,
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Text(
                 text = "Talk with your friends to find the imposter.\nKeep it civil!",
                 style = MaterialTheme.typography.bodyMedium,
@@ -115,7 +115,7 @@ fun DiscussionScreen(
                         ),
                     elevation =
                         CardDefaults.elevatedCardElevation(
-                            defaultElevation = 4.dp,
+                            defaultElevation = Dimens.ElevationSlight,
                         ),
                 ) {
                     Box(
@@ -169,7 +169,7 @@ fun DiscussionScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
         }
     }
 }

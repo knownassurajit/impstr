@@ -85,21 +85,56 @@ private val LightColorScheme =
     )
 
 /**
+ * Material Design 3 Stealth Color Scheme
+ * Uses Neon colors: Black, Violet, Lime, White, Purple
+ */
+private val StealthColorScheme =
+    darkColorScheme(
+        primary = StealthViolet,
+        onPrimary = StealthWhite,
+        primaryContainer = StealthPurple,
+        onPrimaryContainer = StealthWhite,
+        secondary = StealthLime,
+        onSecondary = StealthOnLime,
+        secondaryContainer = StealthSurfaceVariant,
+        onSecondaryContainer = StealthLime,
+        tertiary = StealthPurple,
+        onTertiary = StealthWhite,
+        tertiaryContainer = StealthViolet,
+        onTertiaryContainer = StealthWhite,
+        error = StealthError,
+        onError = StealthWhite,
+        errorContainer = StealthSurfaceVariant,
+        onErrorContainer = StealthError,
+        background = StealthBlack,
+        onBackground = StealthWhite,
+        surface = StealthSurface,
+        onSurface = StealthWhite,
+        surfaceVariant = StealthSurfaceVariant,
+        onSurfaceVariant = StealthWhite,
+        outline = StealthLime,
+        outlineVariant = StealthViolet,
+    )
+
+/**
  * Material Design 3 Theme
  *
  * @param darkTheme Whether to use dark theme (default: true, follows system)
+ * @param isStealthMode Whether stealth mode is active (enables Neon theme)
  * @param dynamicColor Whether to use dynamic color (Android 12+)
  * @param content The composable content
  */
 @Composable
 fun IMPSTRTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    isStealthMode: Boolean = false,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =
         when {
+            isStealthMode -> StealthColorScheme
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

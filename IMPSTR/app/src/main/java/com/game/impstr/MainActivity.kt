@@ -54,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.game.impstr.ui.screens.DiscussionScreen
 import com.game.impstr.ui.screens.HomeScreen
 import com.game.impstr.ui.screens.ResultScreen
@@ -79,7 +80,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val interactionTime = remember { mutableStateOf(System.currentTimeMillis()) }
 
-            IMPSTRTheme {
+            val viewModel: GameViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+            IMPSTRTheme(isStealthMode = uiState.isStealthMode) {
                 CompositionLocalProvider(LocalInteractionTime provides interactionTime) {
                     Surface(
                         modifier =
@@ -96,10 +100,6 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background,
                     ) {
                         val navController = rememberNavController()
-                        // Use hiltViewModel() to scope correctly to navigation graph if needed,
-                        // or here if we want a single shared viewmodel for the activity.
-                        // Given the app structure seems to rely on a shared ViewModel for game state:
-                        val viewModel: GameViewModel = hiltViewModel()
 
                         NavHost(
                             navController = navController,

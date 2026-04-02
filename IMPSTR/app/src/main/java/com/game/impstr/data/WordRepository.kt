@@ -789,6 +789,31 @@ object WordRepository {
                     "Experiment",
                     "Formula",
                 ),
+            "Trending & Viral" to
+                listOf(
+                    "TikTok",
+                    "AI",
+                    "ChatGPT",
+                    "Metaverse",
+                    "NFT",
+                    "Crypto",
+                    "Vibe Check",
+                    "Rizz",
+                    "Ghosting",
+                    "Stan",
+                    "Meme",
+                    "Viral",
+                    "Influencer",
+                    "Podcast",
+                    "Streaming",
+                    "Binge",
+                    "Hashtag",
+                    "Selfie",
+                    "Emoji",
+                    "Cringe",
+                    "Gig Economy",
+                    "Cancel Culture",
+                ),
         )
 
     fun getRandomWord(category: String): String {

@@ -13,9 +13,7 @@ import com.game.impstr.R
 val DisplayFont =
     FontFamily(
         Font(R.font.poppins_regular, FontWeight.Normal),
-        Font(R.font.poppins_medium, FontWeight.Medium),
         Font(R.font.poppins_semibold, FontWeight.SemiBold),
-        Font(R.font.poppins_bold, FontWeight.Bold),
     )
 
 // Inter for Body (Clean, Readable)
@@ -98,7 +96,7 @@ val Typography =
         titleSmall =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
@@ -132,7 +130,7 @@ val Typography =
         labelLarge =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
@@ -140,7 +138,7 @@ val Typography =
         labelMedium =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.5.sp,
@@ -148,7 +146,7 @@ val Typography =
         labelSmall =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.5.sp,

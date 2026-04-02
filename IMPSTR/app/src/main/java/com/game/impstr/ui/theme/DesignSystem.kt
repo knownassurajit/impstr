@@ -10,35 +10,34 @@ import androidx.compose.ui.unit.dp
 
 /**
  * IMPSTR Design System — Centralized design tokens.
- *
- * All spacing, elevation, animation, and semantic color values should be
- * referenced from here instead of using ad-hoc literals in screens.
+ * Grid system: 4dp base multiples.
  */
 object Dimens {
-    // Screen Padding
+    // Screen Padding (16dp-24dp standard)
     val ScreenHorizontal: Dp = 24.dp
     val ScreenVertical: Dp = 24.dp
 
-    // Section Spacing
+    // Section Spacing (4dp mutiples)
     val SpacingXs: Dp = 4.dp
-    val SpacingSm: Dp = 8.dp
-    val SpacingMd: Dp = 12.dp
-    val SpacingLg: Dp = 16.dp
-    val SpacingXl: Dp = 24.dp
+    val SpacingSm: Dp = 8.dp     // Tightly related
+    val SpacingMd: Dp = 12.dp    // Standard separation
+    val SpacingLg: Dp = 16.dp    // Standard separation higher
+    val SpacingXl: Dp = 24.dp    // Distinct sections
     val SpacingXxl: Dp = 32.dp
 
-    // Button Heights
-    val ButtonHeight: Dp = 56.dp
-    val ButtonHeightSmall: Dp = 48.dp
-
-    // Bottom Bar
+    // Component Sizes
+    val TouchTargetMin: Dp = 48.dp
+    val ButtonHeight: Dp = 48.dp
     val BottomBarPadding: Dp = 24.dp
+    val IconSize: Dp = 24.dp
+    val BorderWidth: Dp = 1.dp
 
-    // Elevation
+    // Elevation (Tonal)
     val ElevationNone: Dp = 0.dp
-    val ElevationLow: Dp = 2.dp
-    val ElevationMedium: Dp = 4.dp
-    val ElevationHigh: Dp = 8.dp
+    val ElevationBase: Dp = 1.dp
+    val ElevationSlight: Dp = 3.dp
+    val ElevationHigh: Dp = 6.dp
+    val ElevationMax: Dp = 8.dp
 
     // Card Sizes
     val TimerCircleOuter: Dp = 280.dp
@@ -49,11 +48,20 @@ object Dimens {
 }
 
 /**
- * Corner shape tokens for consistent rounding across all components.
- * Prefer these over hardcoded RoundedCornerShape values.
+ * Standard opacities for content emphasis.
+ */
+object Alpha {
+    const val High = 0.87f
+    const val Medium = 0.60f
+    const val Disabled = 0.38f
+    const val Divider = 0.12f
+}
+
+/**
+ * Corner shape tokens for consistent rounding. (Currently handled in Shapes.kt mostly)
  */
 object Corners {
-    val BottomBar = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val BottomBar = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
     val Badge = RoundedCornerShape(4.dp)
 }
 
@@ -63,11 +71,10 @@ object Corners {
 object Anim {
     const val DurationFast = 200
     const val DurationMedium = 300
-    const val DurationSlow = 500
-    const val DurationCardFlip = 400
+    const val DurationCardFlip = 300
 
-    val EmphasizedEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
-    val DecelerateEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+    val EmphasizedEasing = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f) // Fast out, slow in
+    val DecelerateEasing = CubicBezierEasing(0.0f, 0.0f, 0.2f, 1.0f)  // Linear out, slow in
 }
 
 /**
