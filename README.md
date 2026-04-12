@@ -155,8 +155,8 @@ We maintain a robust testing suite for win conditions and stealth logic.
 
 ## 📝 License & Developer
 
-**Created and Maintained with 💙 by [Surajit Das](https://github.com/knownassurajit)**  
-*This project is built for educational and personal use. All rights reserved © 2026 Surajit Das.*
+**Created and Maintained with 💙 by [Surajit Das](https://www.linkedin.com/in/knownassurajit/)**  
+*Licensed under the [GNU General Public License v3.0](LICENSE). Copyright © 2026 Surajit Das.*
 
 <div align="center">
   <h3>Trust no one. Have fun! 🎭</h3>
