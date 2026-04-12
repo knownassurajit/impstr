@@ -29,6 +29,9 @@
 - [🎯 How to Play](#-how-to-play)
 - [🎨 Design System](#-design-system)
 - [🧱 Architecture](#-architecture)
+## Build Requirements
+- **JDK 17**: This project uses Gradle toolchains and requires JDK 17 for builds.
+- **Android Studio Koala (2024.1.1)** or newer is recommended.
 - [🧠 State Management System](#-state-management-system)
 - [🚀 Getting Started](#-getting-started)
 - [🏗️ Build & Testing](#️-build--testing)
