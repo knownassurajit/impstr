@@ -12,6 +12,9 @@ jobs:
   build-develop:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: IMPSTR
 
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +42,7 @@ jobs:
         if: always()
         with:
           name: develop-reports
-          path: "**/build/reports/"
+          path: "IMPSTR/**/build/reports/"
           retention-days: 14
 
   # ─────────────────────────────────────────────
@@ -50,6 +53,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: IMPSTR
 
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +96,7 @@ jobs:
           fi
           RELEASE_DIR=$(dirname "$APK_FILE")
           echo "✅ Found release dir: $RELEASE_DIR"
-          echo "dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
+          echo "dir=IMPSTR/$RELEASE_DIR" >> $GITHUB_OUTPUT
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
@@ -107,9 +113,11 @@ jobs:
       - name: Extract Version from Gradle
         id: version
         run: |
-          # Prefer .gradle (master), skip root build dir
-          GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle" ! -path "./build/*" | head -n 1)
+          # Specifically look for the Gradle file containing versionName
+          GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
+          
           if [ -z "$GRADLE_FILE" ]; then
+             # Fallback to any build.gradle.kts
              GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
           fi
           echo "Using Gradle file: $GRADLE_FILE"
@@ -119,7 +127,7 @@ jobs:
           # Pattern 1: versionName "x.x.x" (Groovy literal string)
           if grep -q -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE"; then
             VERSION=$(grep -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-
+          
           # Pattern 2: versionName = "x.x.x" (.kts literal string)
           elif grep -q -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE"; then
             VERSION=$(grep -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([0-9][^"]+)".*/\1/')
@@ -167,7 +175,7 @@ jobs:
             exit 1
           fi
           mv "$OLD_APK" "${NEW_NAME}"
-          echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
+          echo "renamed_apk=IMPSTR/${NEW_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload Release APK to Artifacts
         uses: actions/upload-artifact@v4
@@ -182,7 +190,7 @@ jobs:
         if: always()
         with:
           name: master-reports
-          path: "**/build/reports/"
+          path: "IMPSTR/**/build/reports/"
           retention-days: 30
 
       - name: Create Stable Release and Upload APK
