@@ -12,9 +12,6 @@ jobs:
   build-develop:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: IMPSTR
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +39,7 @@ jobs:
         if: always()
         with:
           name: develop-reports
-          path: "IMPSTR/**/build/reports/"
+          path: "**/build/reports/"
           retention-days: 14
 
   # ─────────────────────────────────────────────
@@ -53,9 +50,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    defaults:
-      run:
-        working-directory: IMPSTR
 
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +90,7 @@ jobs:
           fi
           RELEASE_DIR=$(dirname "$APK_FILE")
           echo "✅ Found release dir: $RELEASE_DIR"
-          echo "dir=IMPSTR/$RELEASE_DIR" >> $GITHUB_OUTPUT
+          echo "dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
@@ -175,7 +169,7 @@ jobs:
             exit 1
           fi
           mv "$OLD_APK" "${NEW_NAME}"
-          echo "renamed_apk=IMPSTR/${NEW_NAME}" >> $GITHUB_OUTPUT
+          echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload Release APK to Artifacts
         uses: actions/upload-artifact@v4
@@ -190,7 +184,7 @@ jobs:
         if: always()
         with:
           name: master-reports
-          path: "IMPSTR/**/build/reports/"
+          path: "**/build/reports/"
           retention-days: 30
 
       - name: Create Stable Release and Upload APK

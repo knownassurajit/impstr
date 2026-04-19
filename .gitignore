@@ -1,0 +1,63 @@
+# ============================================================
+# ROOT .gitignore — IMPSTR
+# ============================================================
+
+# ── Android / Gradle ─────────────────────────────────────────
+.gradle/
+build/
+app/build/
+*.iml
+*.hprof
+*.jks
+*.keystore
+release-keystore.properties
+
+# Local SDK / config (never commit these)
+local.properties
+
+# ── Android Studio / IntelliJ ────────────────────────────────
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.DS_Store
+
+# ── Native build artefacts ───────────────────────────────────
+.externalNativeBuild/
+.cxx/
+
+# ── Build outputs ────────────────────────────────────────────
+captures/
+build_output.txt
+*.aab
+*.apk
+app/release/
+
+# ── Tools ────────────────────────────────────────────────────
+# ktlint
+# ktlint-cli-binary-if-any
+
+# ── Resources: only keep public-facing docs + app icon ────────
+# Exclude internal planning / design documents
+Resources/CHANGELOG.md
+Resources/DESIGN.md
+Resources/GUIDE.md
+Resources/LOGIC.md
+Resources/icon.svg
+Resources/icon_master.svg
+Resources/implimentation_plan.md
+Resources/impstr_complete_production_plan_v2.md
+Resources/impstr_implementation_plan.md
+Resources/impstr_logic_engagement_architecture_spec_v3.md
+/Resources/screenshots
+
+# Keep specific files
+!Resources/README.md
+!Resources/icon_play_store.png
+
+# ── Always track .gitignore files ────────────────────────────
+!.gitignore
+!.idea/.gitignore
