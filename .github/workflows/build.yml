@@ -115,7 +115,7 @@ jobs:
         run: |
           # Specifically look for the Gradle file containing versionName
           GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
-          
+
           if [ -z "$GRADLE_FILE" ]; then
              # Fallback to any build.gradle.kts
              GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
@@ -127,7 +127,7 @@ jobs:
           # Pattern 1: versionName "x.x.x" (Groovy literal string)
           if grep -q -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE"; then
             VERSION=$(grep -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-          
+
           # Pattern 2: versionName = "x.x.x" (.kts literal string)
           elif grep -q -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE"; then
             VERSION=$(grep -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([0-9][^"]+)".*/\1/')
