@@ -1,0 +1,88 @@
+# ============================================================
+# IMPSTR - Detailed Gitignore
+# ============================================================
+
+# ── Gradle ───────────────────────────────────────────────────
+.gradle/
+build/
+app/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# ── Android Studio / IntelliJ ────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+/Resources/screenshots
+
+# ── Android Specific ─────────────────────────────────────────
+*.apk
+*.aab
+app/release/
+app/debug/
+output.json
+
+# ── Signing / Keystore ───────────────────────────────────────
+# Keep your signing keys safe! Never commit these.
+*.jks
+*.keystore
+signing.properties
+release-keystore.properties
+
+# ── Kotlin / Jetpack Compose ──────────────────────────────────
+.kotlin/
+kapt/
+ksp/
+
+# ── OS Generated Files ───────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ── Documentation & Resources (Project Specific) ─────────────
+# Exclude internal/draft documentation
+Resources/CHANGELOG.md
+Resources/DESIGN.md
+Resources/GUIDE.md
+Resources/LOGIC.md
+Resources/icon.svg
+Resources/icon_master.svg
+Resources/implimentation_plan.md
+Resources/impstr_complete_production_plan_v2.md
+Resources/impstr_implementation_plan.md
+Resources/impstr_logic_engagement_architecture_spec_v3.md
+
+# Keep Public Facing Files
+!Resources/README.md
+!Resources/icon_play_store.png
+
+# ── CI/CD & Fastlane ─────────────────────────────────────────
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# ── Tools & Miscellaneous ────────────────────────────────────
+ktlint
+build_output.txt
+*.log
+*.hprof
+*.pyc
+
+# ── Always Track ─────────────────────────────────────────────
+!.gitignore
+!.github/
+!app/src/
+!gradle/
