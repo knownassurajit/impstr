@@ -162,7 +162,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.app_version }}"
           OLD_APK="${{ steps.sign_app.outputs.signedReleaseFile }}"
-          NEW_NAME="void-release-v${VERSION}.apk"
+          NEW_NAME="impstr-release-v${VERSION}.apk"
           if [ -z "$OLD_APK" ] || [ ! -f "$OLD_APK" ]; then
             echo "❌ Signed APK not found at: $OLD_APK"
             find . -name "*.apk"
@@ -175,7 +175,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: void-release-v${{ steps.version.outputs.app_version }}
+          name: impstr-release-v${{ steps.version.outputs.app_version }}
           path: ${{ steps.rename.outputs.renamed_apk }}
           retention-days: 90
 
@@ -193,7 +193,7 @@ jobs:
         with:
           files: ${{ steps.rename.outputs.renamed_apk }}
           tag_name: v${{ steps.version.outputs.app_version }}+${{ github.run_number }}
-          name: "Void Launcher v${{ steps.version.outputs.app_version }} (Stable Release)"
+          name: "IMPSTR v${{ steps.version.outputs.app_version }} (Stable Release)"
           body: |
             🚀 **Production Release `v${{ steps.version.outputs.app_version }}`**
 
@@ -210,7 +210,7 @@ jobs:
             | **Triggered by** | @${{ github.actor }} |
 
             ## Installation
-            Download `void-release-v${{ steps.version.outputs.app_version }}.apk` below.
+            Download `impstr-release-v${{ steps.version.outputs.app_version }}.apk` below.
             Enable **Install from unknown sources** on your device if installing outside the Play Store.
           draft: false
           prerelease: false
