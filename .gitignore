@@ -5,7 +5,6 @@
 # ── Gradle ───────────────────────────────────────────────────
 .gradle/
 build/
-app/build/
 gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
@@ -25,8 +24,8 @@ local.properties
 # ── Android Specific ─────────────────────────────────────────
 *.apk
 *.aab
-app/release/
-app/debug/
+release/
+debug/
 output.json
 
 # ── Signing / Keystore ───────────────────────────────────────
@@ -84,5 +83,5 @@ build_output.txt
 # ── Always Track ─────────────────────────────────────────────
 !.gitignore
 !.github/
-!app/src/
+!src/
 !gradle/
