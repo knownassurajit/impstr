@@ -169,7 +169,7 @@ class GameViewModel
         }
 
         private fun loadConfig() {
-            val category = prefs.getString("category", "Random Words") ?: "Random Words"
+            val category = prefs.getString("category", WordRepository.RANDOM_CATEGORY) ?: WordRepository.RANDOM_CATEGORY
             val imposterCount = prefs.getInt("imposter_count", 1)
             val stealthMode = prefs.getBoolean("stealth_mode", false)
             val playerNamesString = prefs.getString("player_names", null)
@@ -562,6 +562,12 @@ class GameViewModel
             players.add(toIndex, item)
             updateState { it.copy(players = players) }
             saveConfig()
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            timerJob?.cancel()
+            gameTimerJob?.cancel()
         }
 
         /**

@@ -169,7 +169,7 @@ fun HomeScreen(
             ) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    color = if (uiState.isStealthMode) StealthPurple else CardYellow,
+                    color = if (uiState.isStealthMode) StealthNeonPurple else CardYellow,
                     icon = Icons.Rounded.Person,
                     label = "Players",
                     value = "${uiState.imposterCount}/${players.size}",
@@ -699,106 +699,3 @@ fun InfoCard(
     }
 }
 
-@Composable
-fun PlayerListItem(
-    player: LobbyPlayer,
-    modifier: Modifier = Modifier,
-    onEditClick: () -> Unit,
-) {
-    ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors =
-            CardDefaults.elevatedCardColors(
-                containerColor =
-                    if (player.isHost) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-            ),
-        elevation =
-            CardDefaults.elevatedCardElevation(
-                defaultElevation = if (player.isHost) 4.dp else 1.dp,
-            ),
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f),
-            ) {
-                Box {
-                    // Avatar
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(player.avatarColor.copy(alpha = 0.4f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = player.name.firstOrNull()?.uppercase() ?: "?",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black.copy(alpha = 0.8f),
-                        )
-                    }
-                    // Host Badge
-                    if (player.isHost) {
-                        Surface(
-                            modifier =
-                                Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(end = 2.dp),
-                            shape = RoundedCornerShape(4.dp),
-                            color = CardYellow,
-                            tonalElevation = 2.dp,
-                        ) {
-                            Text(
-                                "HOST",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = player.name,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "Hold to move",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            // Edit Button
-            IconButton(onClick = onEditClick) {
-                Icon(
-                    Icons.Rounded.Edit,
-                    contentDescription = "Edit Name",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
