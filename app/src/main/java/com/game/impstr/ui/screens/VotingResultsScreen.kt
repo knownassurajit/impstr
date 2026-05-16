@@ -1,7 +1,5 @@
 package com.game.impstr.ui.screens
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,7 +37,6 @@ import com.game.impstr.ui.components.KeepScreenOn
 import com.game.impstr.ui.viewmodel.GameViewModel
 import com.game.impstr.ui.viewmodel.PlayerState
 
-@RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun VotingResultsScreen(
     viewModel: GameViewModel,

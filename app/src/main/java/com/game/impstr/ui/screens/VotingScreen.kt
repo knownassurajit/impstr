@@ -1,8 +1,5 @@
 package com.game.impstr.ui.screens
 
-import android.os.Build
-import androidx.activity.compose.BackHandler
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -44,7 +41,6 @@ data class Player(
     val isEliminated: Boolean,
 )
 
-@RequiresApi(Build.VERSION_CODES.R)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VotingScreen(

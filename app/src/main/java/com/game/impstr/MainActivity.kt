@@ -1,11 +1,10 @@
 package com.game.impstr
 
 import android.content.pm.ActivityInfo
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -30,6 +29,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,16 +45,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.game.impstr.ui.screens.DiscussionScreen
 import com.game.impstr.ui.screens.HomeScreen
 import com.game.impstr.ui.screens.ResultScreen
@@ -64,6 +65,10 @@ import com.game.impstr.ui.theme.IMPSTRTheme
 import com.game.impstr.ui.viewmodel.GameViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Last time the user touched the screen, in ms since boot. Used by long-running
+ * screens to decide whether to keep the display awake.
+ */
 val LocalInteractionTime =
     compositionLocalOf<MutableState<Long>> {
         error("No Interaction Time provided")
@@ -71,11 +76,13 @@ val LocalInteractionTime =
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Draw behind status & navigation bars. The Theme keeps appearance
+        // flags in sync; per-screen content uses Modifier.safeDrawingPadding()
+        // (applied on the NavHost) so no UI overlaps the system bars.
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Lock to portrait mode
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         setContent {
             val interactionTime = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -92,7 +99,7 @@ class MainActivity : ComponentActivity() {
                                 .pointerInput(Unit) {
                                     awaitPointerEventScope {
                                         while (true) {
-                                            awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                            awaitPointerEvent(PointerEventPass.Initial)
                                             interactionTime.value = System.currentTimeMillis()
                                         }
                                     }
@@ -133,7 +140,6 @@ class MainActivity : ComponentActivity() {
                             composable("home") {
                                 val context = LocalContext.current
 
-                                // Exit Confirmation
                                 var showExitDialog by remember { mutableStateOf(false) }
 
                                 androidx.activity.compose.BackHandler {
@@ -141,32 +147,32 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 if (showExitDialog) {
-                                    androidx.compose.material3.AlertDialog(
+                                    AlertDialog(
                                         onDismissRequest = { showExitDialog = false },
                                         title = { Text("Exit Game?") },
                                         text = { Text("Are you sure you want to close the app?") },
                                         confirmButton = {
-                                            androidx.compose.material3.IconButton(
+                                            IconButton(
                                                 onClick = {
                                                     showExitDialog = false
                                                     (context as? android.app.Activity)?.finish()
                                                 },
                                             ) {
                                                 Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.Check,
+                                                    imageVector = Icons.Rounded.Check,
                                                     contentDescription = "Yes",
-                                                    tint = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                                    tint = MaterialTheme.colorScheme.primary,
                                                 )
                                             }
                                         },
                                         dismissButton = {
-                                            androidx.compose.material3.IconButton(
+                                            IconButton(
                                                 onClick = { showExitDialog = false },
                                             ) {
                                                 Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.Close,
+                                                    imageVector = Icons.Rounded.Close,
                                                     contentDescription = "No",
-                                                    tint = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                                                    tint = MaterialTheme.colorScheme.error,
                                                 )
                                             }
                                         },
@@ -277,7 +283,6 @@ fun HelpDialog(onDismiss: () -> Unit) {
                         .verticalScroll(rememberScrollState())
                         .fillMaxWidth(),
             ) {
-                // --- Section 1: The Basics ---
                 RuleHeader("1. The Setup")
                 RuleText(
                     "Everyone receives a secret word. However, one player is the Imposter and sees a different word (or nothing at all).",
@@ -285,7 +290,6 @@ fun HelpDialog(onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // --- Section 2: The Gameplay ---
                 RuleHeader("2. Describe & Blend In")
                 RuleText(
                     "Go around the circle. Describe your word using one sentence.",
@@ -297,7 +301,6 @@ fun HelpDialog(onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // --- Section 3: The Vote ---
                 RuleHeader("3. The Verdict")
                 RuleText(
                     "After discussion, vote for who you think the Imposter is. If the majority catches the Imposter, the Civilians win!",
@@ -307,7 +310,6 @@ fun HelpDialog(onDismiss: () -> Unit) {
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Footer with Icon ---
                 CreditsFooter()
             }
         },
@@ -318,8 +320,6 @@ fun HelpDialog(onDismiss: () -> Unit) {
         },
     )
 }
-
-// --- Helper Composables to keep the main code clean ---
 
 @Composable
 fun RuleHeader(text: String) {
@@ -367,7 +367,7 @@ fun CreditsFooter() {
             Icon(
                 imageVector = Icons.Filled.Favorite,
                 contentDescription = "Love",
-                tint = Color(0xFF3BE6FF), // #3BE6FF color
+                tint = Color(0xFF3BE6FF),
                 modifier =
                     Modifier
                         .size(16.dp)

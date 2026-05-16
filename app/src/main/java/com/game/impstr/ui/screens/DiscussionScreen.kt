@@ -43,9 +43,6 @@ fun DiscussionScreen(
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
-    // Auto-navigate removed in favor of direct click
-
-    // Keep screen on during Discussion
     KeepScreenOn()
 
     var showExitDialog by remember { mutableStateOf(false) }

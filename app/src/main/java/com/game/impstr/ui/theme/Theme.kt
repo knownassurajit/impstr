@@ -1,6 +1,5 @@
 package com.game.impstr.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -10,14 +9,15 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 /**
- * Material Design 3 Dark Color Scheme
- * Optimized for dark theme with proper elevation and contrast
+ * Material Design 3 Expressive — dark color scheme (Normal mode).
+ *
+ * Tonal hierarchy is built around the [SurfaceContainer] family so cards,
+ * sheets and bars sit on distinct elevations without requiring shadows.
  */
 private val DarkColorScheme =
     darkColorScheme(
@@ -45,17 +45,14 @@ private val DarkColorScheme =
         onSurfaceVariant = OnSurfaceVariant,
         outline = Outline,
         outlineVariant = OutlineVariant,
-        // surfaceContainer = SurfaceContainer,
-        // surfaceContainerHigh = SurfaceContainerHigh, // Commented out or removed if causing issues
-        // surfaceContainerHighest = SurfaceContainerHighest,
-        // surfaceContainerLow = SurfaceContainerLow,
-        // surfaceContainerLowest = SurfaceContainerLowest
+        surfaceContainerLowest = SurfaceContainerLowest,
+        surfaceContainerLow = SurfaceContainerLow,
+        surfaceContainer = SurfaceContainer,
+        surfaceContainerHigh = SurfaceContainerHigh,
+        surfaceContainerHighest = SurfaceContainerHighest,
     )
 
-/**
- * Material Design 3 Light Color Scheme
- * For future light theme support
- */
+/** Light scheme retained for completeness — the app currently always renders dark. */
 private val LightColorScheme =
     lightColorScheme(
         primary = Primary,
@@ -85,50 +82,60 @@ private val LightColorScheme =
     )
 
 /**
- * Material Design 3 Stealth Color Scheme
- * Uses Neon colors: Black, Violet, Lime, White, Purple
+ * Stealth Mode (Neon Cyberpunk).
+ *
+ * Primary maps to [StealthLime] because it is the highest-contrast accent
+ * against pure black. The darker neon violet/purple shades are restricted to
+ * container slots where text is not drawn directly on top of them.
  */
 private val StealthColorScheme =
     darkColorScheme(
-        primary = StealthViolet,
-        onPrimary = StealthWhite,
-        primaryContainer = StealthPurple,
-        onPrimaryContainer = StealthWhite,
-        secondary = StealthLime,
-        onSecondary = StealthOnLime,
-        secondaryContainer = StealthSurfaceVariant,
-        onSecondaryContainer = StealthLime,
-        tertiary = StealthPurple,
-        onTertiary = StealthWhite,
-        tertiaryContainer = StealthViolet,
-        onTertiaryContainer = StealthWhite,
+        primary = StealthLime,
+        onPrimary = StealthOnLime,
+        primaryContainer = StealthLimeContainer,
+        onPrimaryContainer = StealthOnLimeContainer,
+        secondary = StealthNeonPurple,
+        onSecondary = StealthOnNeonPurple,
+        secondaryContainer = StealthSurfaceContainerHigh,
+        onSecondaryContainer = StealthNeonPurple,
+        tertiary = StealthCyan,
+        onTertiary = StealthOnCyan,
+        tertiaryContainer = StealthSurfaceContainer,
+        onTertiaryContainer = StealthCyan,
         error = StealthError,
-        onError = StealthWhite,
-        errorContainer = StealthSurfaceVariant,
-        onErrorContainer = StealthError,
+        onError = StealthOnError,
+        errorContainer = StealthErrorContainer,
+        onErrorContainer = StealthOnErrorContainer,
         background = StealthBlack,
         onBackground = StealthWhite,
         surface = StealthSurface,
         onSurface = StealthWhite,
         surfaceVariant = StealthSurfaceVariant,
-        onSurfaceVariant = StealthWhite,
-        outline = StealthLime,
-        outlineVariant = StealthViolet,
+        onSurfaceVariant = StealthOnSurfaceVariant,
+        outline = StealthOutline,
+        outlineVariant = StealthOutlineVariant,
+        surfaceContainerLowest = StealthBlack,
+        surfaceContainerLow = StealthSurface,
+        surfaceContainer = StealthSurfaceContainer,
+        surfaceContainerHigh = StealthSurfaceContainerHigh,
+        surfaceContainerHighest = StealthSurfaceVariant,
     )
 
 /**
- * Material Design 3 Theme
+ * IMPSTR theme entry point.
  *
- * @param darkTheme Whether to use dark theme (default: true, follows system)
- * @param isStealthMode Whether stealth mode is active (enables Neon theme)
- * @param dynamicColor Whether to use dynamic color (Android 12+)
- * @param content The composable content
+ * @param darkTheme Follow the system dark/light setting. Has no effect when
+ *   [isStealthMode] is true.
+ * @param isStealthMode Switches the entire app into the neon cyberpunk scheme.
+ *   Dynamic color is also bypassed in stealth mode so the look stays consistent
+ *   across OEMs.
+ * @param dynamicColor Whether to source colors from the device wallpaper on
+ *   Android 12+. Ignored in stealth mode.
  */
 @Composable
 fun IMPSTRTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     isStealthMode: Boolean = false,
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
@@ -143,17 +150,17 @@ fun IMPSTRTheme(
             else -> LightColorScheme
         }
 
+    // System bars are kept transparent via enableEdgeToEdge() in MainActivity.
+    // We only need to keep the appearance flags in sync with the active scheme
+    // so status/nav-bar icons remain legible.
     val view = LocalView.current
     if (!view.isInEditMode) {
+        val isLightSurface = !(isStealthMode || darkTheme)
         SideEffect {
-            val window = (view.context.findActivity())?.window
-            if (window != null) {
-                window.statusBarColor = colorScheme.background.toArgb()
-                window.navigationBarColor = colorScheme.background.toArgb()
-                WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = !darkTheme
-                    isAppearanceLightNavigationBars = !darkTheme
-                }
+            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = isLightSurface
+                isAppearanceLightNavigationBars = isLightSurface
             }
         }
     }
@@ -164,16 +171,4 @@ fun IMPSTRTheme(
         typography = Typography,
         content = content,
     )
-}
-
-/**
- * Helper to find the Activity from the current Context, un-wrapping ContextWrappers if needed.
- */
-private fun android.content.Context.findActivity(): android.app.Activity? {
-    var context = this
-    while (context is android.content.ContextWrapper) {
-        if (context is android.app.Activity) return context
-        context = context.baseContext
-    }
-    return null
 }

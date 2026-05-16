@@ -62,12 +62,10 @@ fun RoleRevealScreen(
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
-    // We maintain local state for animation triggering to ensure smooth UI updates
     var isFlipped by remember { mutableStateOf(false) }
     var isTransitioning by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-    // val view = androidx.compose.ui.platform.LocalView.current // Unused if haptics removed
 
     val currentIndex = uiState.currentRevealPlayerIndex
     val currentPlayer = uiState.players.getOrNull(currentIndex) ?: return
