@@ -15,8 +15,8 @@ android {
         applicationId = "com.game.impstr"
         minSdk = 31
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.0.0.4"
+        versionCode = 6
+        versionName = "1.0.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
