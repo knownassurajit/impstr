@@ -13,15 +13,20 @@ android {
 
     defaultConfig {
         applicationId = "com.game.impstr"
-        minSdk = 31
+        minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.0.0.5"
 
+        // Deterministic versioning formula
+        val major = 0
+        val minor = 0
+        val patch = 0
+        val build = 10
+
+        versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + build
+        versionName = "$major.$minor.$patch.$build"
+
+        resourceConfigurations += listOf("en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
     }
 
     buildTypes {
