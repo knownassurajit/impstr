@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.game.impstr"
+    namespace = "com.knownassurajit.impstr_game.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.game.impstr"
+        applicationId = "com.knownassurajit.impstr_game.app"
         minSdk = 26
         targetSdk = 36
 

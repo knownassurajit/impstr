@@ -4,7 +4,7 @@
 
 Offline-first Android social deduction game.  
 Stack: Kotlin 2.0.21 · Compose · MD3 · Hilt · MVVM/UDF  
-Pkg: `com.game.impstr` · MinSDK 31 · TargetSDK 36
+Pkg: `com.knownassurajit.impstr_game.app` · MinSDK 31 · TargetSDK 36
 
 ---
 
