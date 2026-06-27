@@ -8,20 +8,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.knownassurajit.impstr_game.app.data.WordRepository
 import com.knownassurajit.impstr_game.app.ui.components.ImpstrLogo
 import com.knownassurajit.impstr_game.app.ui.components.SplitButton
@@ -61,7 +67,15 @@ fun HomeScreen(
             LobbyPlayer(
                 id = playerState.id,
                 name = playerState.name,
-                avatarColor = if (uiState.isStealthMode) StealthPlayerColors[index % StealthPlayerColors.size] else PlayerColors[index % PlayerColors.size],
+                avatarColor =
+                    if (uiState.isStealthMode) {
+                        StealthPlayerColors[index % StealthPlayerColors.size]
+                    } else {
+                        PlayerColors[
+                            index %
+                                PlayerColors.size,
+                        ]
+                    },
                 isReady = playerState.isReady,
                 isHost = index == 0,
                 isMe = index == 0,
@@ -149,14 +163,15 @@ fun HomeScreen(
                                 modifier = Modifier.size(SwitchDefaults.IconSize),
                             )
                         },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                            checkedIconColor = MaterialTheme.colorScheme.onPrimary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            uncheckedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                checkedIconColor = MaterialTheme.colorScheme.onPrimary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                     )
                 }
             }
@@ -266,7 +281,11 @@ fun HomeScreen(
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
-                                            text = player.name.firstOrNull()?.toString()?.uppercase() ?: "?",
+                                            text =
+                                                player.name
+                                                    .firstOrNull()
+                                                    ?.toString()
+                                                    ?.uppercase() ?: "?",
                                             fontWeight = FontWeight.Bold,
                                             color = Color.Black.copy(alpha = 0.7f),
                                         )
@@ -274,7 +293,7 @@ fun HomeScreen(
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Column(
                                         modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.Center
+                                        verticalArrangement = Arrangement.Center,
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
@@ -559,6 +578,11 @@ fun RenamePlayerBottomSheet(
     var name by remember { mutableStateOf(currentName) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -584,7 +608,17 @@ fun RenamePlayerBottomSheet(
                 onValueChange = { name = it },
                 label = { Text("Player Name") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            scope.launch {
+                                sheetState.hide()
+                                onConfirm(name)
+                            }
+                        },
+                    ),
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -698,4 +732,3 @@ fun InfoCard(
         }
     }
 }
-
