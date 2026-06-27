@@ -80,7 +80,7 @@ fun ImpstrLogo(
                 .clickable(
                     onClick = onClick,
                     role = Role.Button,
-                    onClickLabel = "Open Help",
+                    onClickLabel = stringResource(R.string.open_help),
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
