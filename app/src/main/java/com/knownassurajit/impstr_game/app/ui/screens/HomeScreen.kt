@@ -613,9 +613,11 @@ fun RenamePlayerBottomSheet(
                 keyboardActions =
                     KeyboardActions(
                         onDone = {
-                            scope.launch {
-                                sheetState.hide()
-                                onConfirm(name)
+                            if (name.isNotBlank()) {
+                                scope.launch {
+                                    sheetState.hide()
+                                    onConfirm(name.trim())
+                                }
                             }
                         },
                     ),
