@@ -1,17 +1,23 @@
-name: Play Console Release
+name: Play Console & GitHub Release
 
 on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      rollback_version:
+        description: 'Optional rollback version tag (e.g. v1.0.0)'
+        required: false
+        default: ''
 
 concurrency:
-  group: play-release-${{ github.workflow }}
+  group: play-release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Prepare Release & Publish to Play Console
+    name: Prepare Release, Publish GitHub & Play Console
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -32,38 +38,43 @@ jobs:
       - name: Extract Version
         id: version
         run: |
-          MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-          MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-          PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-          BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-          VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
-          VERSION_CODE=$(( MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + BUILD ))
+          if [ -n "${{ github.event.inputs.rollback_version }}" ]; then
+            VERSION_NAME="${{ github.event.inputs.rollback_version }}"
+            VERSION_CODE=$(date +'%Y%m%d%H')
+          else
+            MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
+            MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
+            PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
+            BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
+            VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
+            VERSION_CODE=$(( MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + BUILD ))
+          fi
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
           
           echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "shortSha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
-      - name: Create Release Branch
+      - name: Create Dedicated Release Branch
         run: |
           BRANCH_NAME="release/impstr/${{ steps.version.outputs.versionName }}"
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME"; then
-            echo "Branch $BRANCH_NAME already exists, checking it out"
+            echo "Release branch $BRANCH_NAME exists, checking out."
             git checkout "$BRANCH_NAME"
           else
-            echo "Creating new release branch $BRANCH_NAME"
+            echo "Creating dedicated release branch $BRANCH_NAME for safe rollback tracking."
             git checkout -b "$BRANCH_NAME"
             git push origin "$BRANCH_NAME"
           fi
 
-      - name: Build Android App Bundle
+      - name: Build Android App Bundle & APK
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew bundleRelease assembleRelease --no-daemon
 
-      - name: Sign AAB
+      - name: Sign AAB & APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
         with:
@@ -85,7 +96,29 @@ jobs:
           workflow=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EOF
 
-      - name: Publish to Google Play (Internal Testing)
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.versionName }}
+          name: "IMPSTR v${{ steps.version.outputs.versionName }}"
+          body: |
+            ### Release Summary
+            - **App:** IMPSTR
+            - **Version:** v${{ steps.version.outputs.versionName }}
+            - **Commit:** ${{ github.sha }}
+            - **Release Branch:** `release/impstr/${{ steps.version.outputs.versionName }}`
+          draft: false
+          prerelease: false
+          files: |
+            app/build/outputs/apk/release/*.apk
+            ${{ steps.sign_app.outputs.signedReleaseFile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Google Play (Internal Track)
+        if: env.PLAY_CONSOLE_JSON != ''
+        env:
+          PLAY_CONSOLE_JSON: ${{ secrets.PLAY_CONSOLE_JSON }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
