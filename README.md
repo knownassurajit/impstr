@@ -29,12 +29,11 @@
 - [🎯 How to Play](#-how-to-play)
 - [🎨 Design System](#-design-system)
 - [🧱 Architecture](#-architecture)
-## Build Requirements
-- **JDK 17**: This project uses Gradle toolchains and requires JDK 17 for builds.
-- **Android Studio Koala (2024.1.1)** or newer is recommended.
+- [🔧 Build Requirements](#-build-requirements)
 - [🧠 State Management System](#-state-management-system)
 - [🚀 Getting Started](#-getting-started)
 - [🏗️ Build & Testing](#️-build--testing)
+- [⚙️ CI/CD](#️-cicd)
 - [📝 License & Developer](#-license--developer)
 
 ---
@@ -119,6 +118,13 @@ IMPSTR leverages a robust **Model-View-ViewModel (MVVM)** pattern with **Unidire
 
 ---
 
+## 🔧 Build Requirements
+
+- **JDK 17**: This project uses Gradle toolchains and requires JDK 17 for builds.
+- **Android Studio Koala (2024.1.1)** or newer is recommended.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -150,6 +156,39 @@ We maintain a robust testing suite for win conditions and stealth logic.
 | Test Class | Coverage |
 |------------|----------|
 | `GameViewModelTest` | Boundaries, role assignment, win evaluation, and **Stealth Mode** word pairs. |
+
+---
+
+## ⚙️ CI/CD
+
+IMPSTR ships through a **develop → master** pipeline, driven by a single containerized workflow at [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
+
+### Branch model
+- **`develop`** — active development branch. All feature work merges here via pull request.
+- **`master`** — production branch. Only promoted from `develop` via pull request once it's release-ready.
+
+### Pipeline jobs
+
+| Job | Trigger | What it does |
+|---|---|---|
+| **`test`** | Every push to `develop`/`master`, and every pull request | Runs `testDebugUnitTest` + `lintDebug` inside an `eclipse-temurin:17-jdk-jammy` container and uploads the reports as a build artifact. This is the CI signal for **every** PR, including feature branches into `develop`. |
+| **`debug-release`** | Push to `develop` (after `test` passes) | Builds an **unsigned debug APK**, extracts the version from Gradle, generates a changelog since the last tag, and publishes it as a **GitHub pre-release** for internal testing. |
+| **`pr-summary`** | Pull requests targeting `master` | Re-runs lint + unit tests, then posts a detailed **`$GITHUB_STEP_SUMMARY`** and a PR comment with pass/fail status, current version, and a changelog preview of everything since the last stable release — so a `develop → master` PR is reviewable at a glance. |
+| **`stable-release`** | Push to `master` (after `test` passes) | Runs `testReleaseUnitTest` + `lintRelease`, builds `assembleRelease`, **signs** the APK via [`r0adkll/sign-android-release`](https://github.com/r0adkll/sign-android-release), publishes it as a **GitHub Stable Release** (`impstr-release-v<version>.apk`), and — if Play Console credentials are configured — publishes it to the **Google Play internal testing track** via [`r0adkll/upload-google-play`](https://github.com/r0adkll/upload-google-play). |
+
+### Release artifacts
+
+| Source | Naming | Type |
+|---|---|---|
+| `develop` pre-release | `impstr-debug-v<version>.apk` | Unsigned debug build |
+| `master` stable release | `impstr-release-v<version>.apk` | Signed release build |
+
+### Required secrets
+
+| Secret | Used for |
+|---|---|
+| `SIGNING_KEY`, `ALIAS`, `KEY_STORE_PASSWORD`, `KEY_PASSWORD` | Signing the release APK on `master` |
+| `PLAY_CONSOLE_JSON` | Publishing to the Google Play internal track (`com.knownassurajit.app.game.impstr`). If unset, the Play publish step is skipped as a safe no-op — nothing else in the pipeline is blocked. |
 
 ---
 
