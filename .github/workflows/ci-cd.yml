@@ -33,14 +33,14 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up JDK 17
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           java-version: "17"
           distribution: "temurin"
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@00186d05c5dea8ab6b52aa2e3012398c3cc3d24b
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -52,7 +52,7 @@ jobs:
         run: ./gradlew lintDebug --no-daemon
 
       - name: Upload Test & Lint Reports
-        uses: actions/upload-artifact@ea165f8d65b6f75b7ca4f3a20b5e1e8e7e1adf6b
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: test-reports
@@ -71,7 +71,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/dependency-review-action@da3b6d89b7ff0e7b01db34e8fa88de4ec57b3fef
+      - uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9
         with:
           fail-on-severity: high
 
@@ -93,7 +93,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           java-version: "17"
           distribution: "temurin"
@@ -174,7 +174,7 @@ jobs:
 
       - name: Create Pre-release and Upload APK
         if: success()
-        uses: softprops/action-gh-release@da05d552573ad5ece0dc98dfdbf2d8a2073d3c74
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
         with:
           files: ${{ steps.rename.outputs.renamed_apk }}
           tag_name: v${{ steps.version.outputs.app_version }}-dev.${{ github.run_number }}
@@ -229,14 +229,14 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           java-version: "17"
           distribution: "temurin"
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@00186d05c5dea8ab6b52aa2e3012398c3cc3d24b
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -371,7 +371,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
         with:
           java-version: "17"
           distribution: "temurin"
@@ -407,7 +407,7 @@ jobs:
           echo "dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@905b7e5e42ca7be027a28dc2d7e91c9da3c3d23e
+        uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407
         id: sign_app
         with:
           releaseDirectory: ${{ steps.locate.outputs.dir }}
@@ -486,7 +486,7 @@ jobs:
           echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload Release APK to Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6f75b7ca4f3a20b5e1e8e7e1adf6b
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: success()
         with:
           name: impstr-release-v${{ steps.version.outputs.app_version }}
@@ -494,7 +494,7 @@ jobs:
           retention-days: 90
 
       - name: Upload Test & Lint Reports
-        uses: actions/upload-artifact@ea165f8d65b6f75b7ca4f3a20b5e1e8e7e1adf6b
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: master-reports
@@ -503,7 +503,7 @@ jobs:
 
       - name: Create Stable Release and Upload APK
         if: success()
-        uses: softprops/action-gh-release@da05d552573ad5ece0dc98dfdbf2d8a2073d3c74
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
         with:
           files: ${{ steps.rename.outputs.renamed_apk }}
           tag_name: v${{ steps.version.outputs.app_version }}+${{ github.run_number }}
@@ -544,7 +544,7 @@ jobs:
 
       - name: Publish to Google Play (Internal Track)
         if: env.PLAY_CONSOLE_JSON != ''
-        uses: r0adkll/upload-google-play@8959b834a12e9d0c61d9c5dce63f6e2cfd80d7ae
+        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
           packageName: com.knownassurajit.app.game.impstr
