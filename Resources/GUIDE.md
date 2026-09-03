@@ -65,7 +65,7 @@ IMPSTR/
 ├── app/
 │   ├── src/
 │   │   └── main/
-│   │       ├── java/com/game/impstr/
+│   │       ├── java/com/knownassurajit/impstr_game/app/
 │   │       │   ├── ui/
 │   │       │   │   ├── theme/
 │   │       │   │   │   ├── DesignSystem.kt     # DESIGN TOKENS

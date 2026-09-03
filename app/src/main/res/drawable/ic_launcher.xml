@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="204.8dp"
+    android:height="204.8dp"
+    android:viewportWidth="2048"
+    android:viewportHeight="2048">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#0B0B0F"
+        android:pathData="M 0,0 H 2048 V 2048 H 0 Z" />
+
+    <!-- Main Identity Bar (Civilian) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 880,512 L 1008,512 A 16,16 0 0 1 1024,528 L 1024,1520 A 16,16 0 0 1 1008,1536 L 880,1536 A 16,16 0 0 1 864,1520 L 864,528 A 16,16 0 0 1 880,512 Z" />
+
+    <!-- Imposter Accent Bar -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M 1100,512 L 1124,512 A 12,12 0 0 1 1136,524 L 1136,1524 A 12,12 0 0 1 1124,1536 L 1100,1536 A 12,12 0 0 1 1088,1524 L 1088,524 A 12,12 0 0 1 1100,512 Z" />
+
+</vector>
