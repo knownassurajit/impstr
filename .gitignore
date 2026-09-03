@@ -1,47 +1,57 @@
 # ============================================================
-# ROOT .gitignore — IMPSTR
+# IMPSTR - Detailed Gitignore
 # ============================================================
 
-# ── Android / Gradle ─────────────────────────────────────────
+# ── Gradle ───────────────────────────────────────────────────
 .gradle/
 build/
-app/build/
-*.iml
-*.hprof
-*.jks
-*.keystore
-release-keystore.properties
-
-# Local SDK / config (never commit these)
-local.properties
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
 
 # ── Android Studio / IntelliJ ────────────────────────────────
 .idea/
-.idea/caches/
-.idea/libraries/
-.idea/modules.xml
-.idea/workspace.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
-.DS_Store
-
-# ── Native build artefacts ───────────────────────────────────
+*.iml
+*.iws
+*.ipr
+out/
+captures/
 .externalNativeBuild/
 .cxx/
+local.properties
+/Resources/screenshots
 
-# ── Build outputs ────────────────────────────────────────────
-captures/
-build_output.txt
-*.aab
+# ── Android Specific ─────────────────────────────────────────
 *.apk
-app/release/
+*.aab
+release/
+debug/
+output.json
 
-# ── Tools ────────────────────────────────────────────────────
-# ktlint
-# ktlint-cli-binary-if-any
+# ── Signing / Keystore ───────────────────────────────────────
+# Keep your signing keys safe! Never commit these.
+*.jks
+*.keystore
+signing.properties
+release-keystore.properties
 
-# ── Resources: only keep public-facing docs + app icon ────────
-# Exclude internal planning / design documents
+# ── Kotlin / Jetpack Compose ──────────────────────────────────
+.kotlin/
+kapt/
+ksp/
+
+# ── OS Generated Files ───────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ── Documentation & Resources (Project Specific) ─────────────
+# Exclude internal/draft documentation
 Resources/CHANGELOG.md
 Resources/DESIGN.md
 Resources/GUIDE.md
@@ -54,10 +64,25 @@ Resources/impstr_implementation_plan.md
 Resources/impstr_logic_engagement_architecture_spec_v3.md
 /Resources/screenshots
 
-# Keep specific files
+# Keep Public Facing Files
 !Resources/README.md
 !Resources/icon_play_store.png
 
-# ── Always track .gitignore files ────────────────────────────
+# ── CI/CD & Fastlane ─────────────────────────────────────────
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# ── Tools & Miscellaneous ────────────────────────────────────
+ktlint
+build_output.txt
+*.log
+*.hprof
+*.pyc
+
+# ── Always Track ─────────────────────────────────────────────
 !.gitignore
-!.idea/.gitignore
+!.github/
+!src/
+!gradle/

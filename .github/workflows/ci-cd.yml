@@ -1,0 +1,555 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # TEST — Unit tests + Lint (every push to develop/master, every PR)
+  # ─────────────────────────────────────────────
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: eclipse-temurin:17-jdk-jammy
+
+    steps:
+      - name: Install container prerequisites
+        run: |
+          apt-get update
+          apt-get install -y unzip curl
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Run Lint Analysis
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: Upload Test & Lint Reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: test-reports
+          path: "**/build/reports/"
+          retention-days: 14
+
+  # ─────────────────────────────────────────────
+  # DEPENDENCY REVIEW — pull requests only
+  # ─────────────────────────────────────────────
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9
+        with:
+          fail-on-severity: high
+
+  # ─────────────────────────────────────────────
+  # DEBUG-RELEASE — develop pushes → unsigned debug APK, GitHub pre-release
+  # ─────────────────────────────────────────────
+  debug-release:
+    name: Create Pre-release
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Extract Version from Gradle
+        id: version
+        run: |
+          # Specifically look for the Gradle file containing versionName
+          GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
+
+          if [ -z "$GRADLE_FILE" ]; then
+             # Fallback to any build.gradle.kts
+             GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
+          fi
+          echo "Using Gradle file: $GRADLE_FILE"
+
+          VERSION=""
+
+          # Pattern 1: versionName "x.x.x" (Groovy literal string)
+          if grep -q -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE"; then
+            VERSION=$(grep -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+
+          # Pattern 2: versionName = "x.x.x" (.kts literal string)
+          elif grep -q -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE"; then
+            VERSION=$(grep -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([0-9][^"]+)".*/\1/')
+
+          # Pattern 3: val major/minor/patch/build variables (fallback)
+          elif grep -q -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE"; then
+            MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
+          fi
+
+          VERSION=${VERSION#v}
+          if [ -z "$VERSION" ]; then
+            VERSION=$(date +'%Y.%m.%d')
+            echo "⚠️ Could not extract version, using date: $VERSION"
+          fi
+
+          echo "✅ Final version: $VERSION"
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            LOG=$(git log --oneline -20 --pretty="- %s (%h)")
+          else
+            LOG=$(git log --pretty="- %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        id: rename
+        run: |
+          VERSION="${{ steps.version.outputs.app_version }}"
+          APK_FILE=$(find . -path "*/apk/debug/*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
+            echo "❌ Debug APK not found."
+            find . -name "*.apk"
+            exit 1
+          fi
+          NEW_NAME="impstr-debug-v${VERSION}.apk"
+          mv "$APK_FILE" "${NEW_NAME}"
+          echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create Pre-release and Upload APK
+        if: success()
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
+        with:
+          files: ${{ steps.rename.outputs.renamed_apk }}
+          tag_name: v${{ steps.version.outputs.app_version }}-dev.${{ github.run_number }}
+          name: "IMPSTR v${{ steps.version.outputs.app_version }} (Debug Pre-release #${{ github.run_number }})"
+          body: |
+            🧪 **Debug build from `develop`** — unsigned, for internal testing only.
+
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+            | Field | Value |
+            |---|---|
+            | **Version** | v${{ steps.version.outputs.app_version }} |
+            | **Branch** | develop |
+            | **Build** | #${{ github.run_number }} |
+            | **Commit** | ${{ github.sha }} |
+            | **Triggered by** | @${{ github.actor }} |
+
+            ## Installation
+            Download `impstr-debug-v${{ steps.version.outputs.app_version }}.apk` below.
+            This is an **unsigned debug build** — enable **Install from unknown sources** to sideload it.
+          draft: false
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─────────────────────────────────────────────
+  # PR-SUMMARY — pull requests targeting master (develop → master promotion)
+  # ─────────────────────────────────────────────
+  pr-summary:
+    name: PR summary
+    needs: test
+    if: always() && github.event_name == 'pull_request' && github.base_ref == 'master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: eclipse-temurin:17-jdk-jammy
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Install container prerequisites
+        run: |
+          apt-get update
+          apt-get install -y unzip curl
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run checks and capture results
+        id: checks
+        continue-on-error: true
+        run: |
+          set +e
+
+          run_step() {
+            local name="$1"; shift
+            local outfile="$1"; shift
+            "$@" > "$outfile" 2>&1
+            local status=$?
+            if [ $status -eq 0 ]; then
+              echo "${name}_STATUS=pass" >> "$GITHUB_ENV"
+            else
+              echo "${name}_STATUS=fail" >> "$GITHUB_ENV"
+            fi
+            return 0
+          }
+
+          run_step LINT lint.log ./gradlew lintDebug --no-daemon
+          run_step UNIT_TEST unittest.log ./gradlew testDebugUnitTest --no-daemon
+
+          UNIT_TESTS_RUN=$(grep -ohE '[0-9]+ tests completed' unittest.log | tail -n 1 | awk '{print $1}')
+          echo "UNIT_TESTS_RUN=${UNIT_TESTS_RUN:-unknown}" >> $GITHUB_ENV
+
+      - name: Determine version delta
+        id: version_delta
+        run: |
+          GRADLE_FILE="build.gradle.kts"
+          MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+          MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+          PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+          BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+          CURRENT_VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+          LAST_STABLE_TAG=$(git tag --list 'v*' --sort=-creatordate | grep -vE '\-dev\.' | head -n 1)
+          if [ -n "$LAST_STABLE_TAG" ]; then
+            echo "LAST_STABLE_TAG=$LAST_STABLE_TAG" >> $GITHUB_ENV
+            COMMITS_SINCE=$(git rev-list "${LAST_STABLE_TAG}..HEAD" --count 2>/dev/null || echo "unknown")
+            echo "COMMITS_SINCE=$COMMITS_SINCE" >> $GITHUB_ENV
+          else
+            echo "LAST_STABLE_TAG=(none found)" >> $GITHUB_ENV
+            echo "COMMITS_SINCE=unknown" >> $GITHUB_ENV
+          fi
+
+      - name: Generate changelog preview
+        run: |
+          if [ -n "$LAST_STABLE_TAG" ] && [ "$LAST_STABLE_TAG" != "(none found)" ]; then
+            git log --pretty=format:'- %h %s (%an, %ad)' --date=short "${LAST_STABLE_TAG}..HEAD" --no-merges > changelog_preview.txt || true
+          else
+            git log --pretty=format:'- %h %s (%an, %ad)' --date=short -n 20 --no-merges > changelog_preview.txt || true
+          fi
+
+      - name: Write PR comment body
+        run: |
+          {
+            echo "## PR Summary: develop -> master"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| Android Lint (lintDebug) | ${LINT_STATUS:-unknown} |"
+            echo "| Unit tests (testDebugUnitTest) | ${UNIT_TEST_STATUS:-unknown} (${UNIT_TESTS_RUN:-unknown} tests) |"
+            echo
+            echo "### Version delta"
+            echo "- Current \`versionName\`: \`$CURRENT_VERSION\`"
+            echo "- Last stable tag: \`$LAST_STABLE_TAG\`"
+            echo "- Commits since last stable release: $COMMITS_SINCE"
+            echo
+            echo "### Changelog preview (since last stable release)"
+            echo '```'
+            cat changelog_preview.txt
+            echo '```'
+          } > pr_comment_body.md
+
+      - name: Post PR comment
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr_comment_body.md', 'utf8');
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '## PR Summary: develop -> master';
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail job if any check failed
+        if: env.LINT_STATUS == 'fail' || env.UNIT_TEST_STATUS == 'fail'
+        run: |
+          echo "One or more checks failed. See summary above."
+          exit 1
+
+  # ─────────────────────────────────────────────
+  # STABLE-RELEASE — master pushes → signed release APK, GitHub Stable Release, Play Console
+  # ─────────────────────────────────────────────
+  stable-release:
+    name: Prepare Release, Publish GitHub & Play Console
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      PLAY_CONSOLE_JSON: ${{ secrets.PLAY_CONSOLE_JSON }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Unit Tests
+        run: ./gradlew testReleaseUnitTest
+
+      - name: Run Lint Analysis
+        run: ./gradlew lintRelease
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Find Release APK Directory
+        id: locate
+        run: |
+          # Find the directory containing the unsigned release APK for the signing action
+          APK_FILE=$(find . -path "*/apk/release/*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find . -name "*.apk" -path "*/build/outputs/*" | grep -i release | head -n 1)
+          fi
+          if [ -z "$APK_FILE" ]; then
+            echo "❌ No release APK found. Listing all APKs:"
+            find . -name "*.apk"
+            exit 1
+          fi
+          RELEASE_DIR=$(dirname "$APK_FILE")
+          echo "✅ Found release dir: $RELEASE_DIR"
+          echo "dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
+
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407
+        id: sign_app
+        with:
+          releaseDirectory: ${{ steps.locate.outputs.dir }}
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "35.0.0"
+
+      - name: Extract Version from Gradle
+        id: version
+        run: |
+          # Specifically look for the Gradle file containing versionName
+          GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
+
+          if [ -z "$GRADLE_FILE" ]; then
+             # Fallback to any build.gradle.kts
+             GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
+          fi
+          echo "Using Gradle file: $GRADLE_FILE"
+
+          VERSION=""
+
+          # Pattern 1: versionName "x.x.x" (Groovy literal string)
+          if grep -q -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE"; then
+            VERSION=$(grep -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+
+          # Pattern 2: versionName = "x.x.x" (.kts literal string)
+          elif grep -q -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE"; then
+            VERSION=$(grep -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([0-9][^"]+)".*/\1/')
+
+          # Pattern 3: val major/minor/patch/build variables (fallback)
+          elif grep -q -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE"; then
+            MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
+            VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
+          fi
+
+          VERSION=${VERSION#v}
+          if [ -z "$VERSION" ]; then
+            VERSION=$(date +'%Y.%m.%d')
+            echo "⚠️ Could not extract version, using date: $VERSION"
+          fi
+
+          echo "✅ Final version: $VERSION"
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            LOG=$(git log --oneline -20 --pretty="- %s (%h)")
+          else
+            LOG=$(git log --pretty="- %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        id: rename
+        run: |
+          VERSION="${{ steps.version.outputs.app_version }}"
+          OLD_APK="${{ steps.sign_app.outputs.signedReleaseFile }}"
+          NEW_NAME="impstr-release-v${VERSION}.apk"
+          if [ -z "$OLD_APK" ] || [ ! -f "$OLD_APK" ]; then
+            echo "❌ Signed APK not found at: $OLD_APK"
+            find . -name "*.apk"
+            exit 1
+          fi
+          mv "$OLD_APK" "${NEW_NAME}"
+          echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Upload Release APK to Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: success()
+        with:
+          name: impstr-release-v${{ steps.version.outputs.app_version }}
+          path: ${{ steps.rename.outputs.renamed_apk }}
+          retention-days: 90
+
+      - name: Upload Test & Lint Reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: master-reports
+          path: "**/build/reports/"
+          retention-days: 30
+
+      - name: Create Stable Release and Upload APK
+        if: success()
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
+        with:
+          files: ${{ steps.rename.outputs.renamed_apk }}
+          tag_name: v${{ steps.version.outputs.app_version }}+${{ github.run_number }}
+          name: "IMPSTR v${{ steps.version.outputs.app_version }} (Stable Release)"
+          body: |
+            🚀 **Production Release `v${{ steps.version.outputs.app_version }}`**
+
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+            | Field | Value |
+            |---|---|
+            | **Version** | v${{ steps.version.outputs.app_version }} |
+            | **Branch** | master |
+            | **Build** | #${{ github.run_number }} |
+            | **Commit** | ${{ github.sha }} |
+            | **Triggered by** | @${{ github.actor }} |
+
+            ## Installation
+            Download `impstr-release-v${{ steps.version.outputs.app_version }}.apk` below.
+            Enable **Install from unknown sources** on your device if installing outside the Play Store.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Play Store Release Notes
+        if: env.PLAY_CONSOLE_JSON != ''
+        run: |
+          mkdir -p release_notes/en-US
+          cat > release_notes/en-US/default.txt <<EOF
+          Source:
+          version=${{ steps.version.outputs.app_version }}
+          commit=${{ github.sha }}
+          workflow=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+
+      - name: Publish to Google Play (Internal Track)
+        if: env.PLAY_CONSOLE_JSON != ''
+        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
+          packageName: com.knownassurajit.app.game.impstr
+          releaseFiles: ${{ steps.rename.outputs.renamed_apk }}
+          track: internal
+          status: completed
+          whatsNewDirectory: release_notes
+          releaseName: impstr-${{ steps.version.outputs.app_version }}+${{ github.run_number }}
