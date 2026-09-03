@@ -52,7 +52,7 @@ jobs:
         run: ./gradlew lintDebug --no-daemon
 
       - name: Upload Test & Lint Reports
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: test-reports
@@ -486,7 +486,7 @@ jobs:
           echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload Release APK to Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: success()
         with:
           name: impstr-release-v${{ steps.version.outputs.app_version }}
@@ -494,7 +494,7 @@ jobs:
           retention-days: 90
 
       - name: Upload Test & Lint Reports
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: master-reports
