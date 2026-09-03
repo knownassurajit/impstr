@@ -45,11 +45,11 @@ private val DarkColorScheme =
         onSurfaceVariant = OnSurfaceVariant,
         outline = Outline,
         outlineVariant = OutlineVariant,
-        // surfaceContainer = SurfaceContainer,
-        // surfaceContainerHigh = SurfaceContainerHigh, // Commented out or removed if causing issues
-        // surfaceContainerHighest = SurfaceContainerHighest,
-        // surfaceContainerLow = SurfaceContainerLow,
-        // surfaceContainerLowest = SurfaceContainerLowest
+        surfaceContainer = SurfaceContainer,
+        surfaceContainerHigh = SurfaceContainerHigh,
+        surfaceContainerHighest = SurfaceContainerHighest,
+        surfaceContainerLow = SurfaceContainerLow,
+        surfaceContainerLowest = SurfaceContainerLowest,
     )
 
 /**
@@ -82,6 +82,11 @@ private val LightColorScheme =
         onSurfaceVariant = OnSurfaceVariant,
         outline = Outline,
         outlineVariant = OutlineVariant,
+        surfaceContainer = SurfaceContainer,
+        surfaceContainerHigh = SurfaceContainerHigh,
+        surfaceContainerHighest = SurfaceContainerHighest,
+        surfaceContainerLow = SurfaceContainerLow,
+        surfaceContainerLowest = SurfaceContainerLowest,
     )
 
 /**
