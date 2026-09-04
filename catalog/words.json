@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "globalEasyWords": [
+    "Pizza",
+    "Soccer",
+    "Guitar",
+    "Beach",
+    "Rainbow",
+    "Robot",
+    "Castle",
+    "Camera",
+    "Umbrella",
+    "Trophy"
+  ],
+  "regions": {
+    "IN": {
+      "label": "India",
+      "suggestedCategories": ["Around You", "Food & Drinks", "Sports & Activities", "Movies & TV Shows"],
+      "easyWords": ["Street Food", "Cricket Match", "Monsoon", "Chai Stall"],
+      "categories": {
+        "Around You": ["Street Food", "Cricket Match", "Chai Stall", "Monsoon", "Local Train"]
+      }
+    },
+    "US": {
+      "label": "United States",
+      "suggestedCategories": ["Around You", "Sports & Activities", "Movies & TV Shows", "Food & Drinks"],
+      "easyWords": ["Diner", "Road Trip", "Baseball Cap"],
+      "categories": {
+        "Around You": ["Diner", "Road Trip", "Baseball Cap", "County Fair"]
+      }
+    },
+    "GB": {
+      "label": "United Kingdom",
+      "suggestedCategories": ["Around You", "Food & Drinks", "Sports & Activities"],
+      "easyWords": ["Tea Break", "Football Pitch", "High Street"],
+      "categories": {
+        "Around You": ["Tea Break", "Football Pitch", "High Street"]
+      }
+    },
+    "JP": {
+      "label": "Japan",
+      "suggestedCategories": ["Around You", "Food & Drinks", "Movies & TV Shows"],
+      "easyWords": ["Convenience Store", "Cherry Blossom", "Bullet Train"],
+      "categories": {
+        "Around You": ["Convenience Store", "Cherry Blossom", "Bullet Train"]
+      }
+    }
+  }
+}

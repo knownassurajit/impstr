@@ -1,6 +1,5 @@
 package com.knownassurajit.app.game.impstr.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -10,15 +9,10 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-/**
- * Material Design 3 Dark Color Scheme
- * Optimized for dark theme with proper elevation and contrast
- */
 private val DarkColorScheme =
     darkColorScheme(
         primary = Primary,
@@ -45,54 +39,60 @@ private val DarkColorScheme =
         onSurfaceVariant = OnSurfaceVariant,
         outline = Outline,
         outlineVariant = OutlineVariant,
+        inverseSurface = InverseSurface,
+        inverseOnSurface = InverseOnSurface,
+        inversePrimary = InversePrimary,
+        scrim = Scrim,
+        surfaceTint = Primary,
+        surfaceDim = SurfaceDim,
+        surfaceBright = SurfaceBright,
+        surfaceContainerLowest = SurfaceContainerLowest,
+        surfaceContainerLow = SurfaceContainerLow,
         surfaceContainer = SurfaceContainer,
         surfaceContainerHigh = SurfaceContainerHigh,
         surfaceContainerHighest = SurfaceContainerHighest,
-        surfaceContainerLow = SurfaceContainerLow,
-        surfaceContainerLowest = SurfaceContainerLowest,
     )
 
-/**
- * Material Design 3 Light Color Scheme
- * For future light theme support
- */
 private val LightColorScheme =
     lightColorScheme(
-        primary = Primary,
-        onPrimary = OnPrimary,
-        primaryContainer = PrimaryContainer,
-        onPrimaryContainer = OnPrimaryContainer,
-        secondary = Secondary,
-        onSecondary = OnSecondary,
-        secondaryContainer = SecondaryContainer,
-        onSecondaryContainer = OnSecondaryContainer,
-        tertiary = Tertiary,
-        onTertiary = OnTertiary,
-        tertiaryContainer = TertiaryContainer,
-        onTertiaryContainer = OnTertiaryContainer,
-        error = Error,
-        onError = OnError,
-        errorContainer = ErrorContainer,
-        onErrorContainer = OnErrorContainer,
-        background = Background,
-        onBackground = OnBackground,
-        surface = Surface,
-        onSurface = OnSurface,
-        surfaceVariant = SurfaceVariant,
-        onSurfaceVariant = OnSurfaceVariant,
-        outline = Outline,
-        outlineVariant = OutlineVariant,
-        surfaceContainer = SurfaceContainer,
-        surfaceContainerHigh = SurfaceContainerHigh,
-        surfaceContainerHighest = SurfaceContainerHighest,
-        surfaceContainerLow = SurfaceContainerLow,
-        surfaceContainerLowest = SurfaceContainerLowest,
+        primary = LightPrimary,
+        onPrimary = LightOnPrimary,
+        primaryContainer = LightPrimaryContainer,
+        onPrimaryContainer = LightOnPrimaryContainer,
+        secondary = LightSecondary,
+        onSecondary = LightOnSecondary,
+        secondaryContainer = LightSecondaryContainer,
+        onSecondaryContainer = LightOnSecondaryContainer,
+        tertiary = LightTertiary,
+        onTertiary = LightOnTertiary,
+        tertiaryContainer = LightTertiaryContainer,
+        onTertiaryContainer = LightOnTertiaryContainer,
+        error = LightError,
+        onError = LightOnError,
+        errorContainer = LightErrorContainer,
+        onErrorContainer = LightOnErrorContainer,
+        background = LightBackground,
+        onBackground = LightOnBackground,
+        surface = LightSurface,
+        onSurface = LightOnSurface,
+        surfaceVariant = LightSurfaceVariant,
+        onSurfaceVariant = LightOnSurfaceVariant,
+        outline = LightOutline,
+        outlineVariant = LightOutlineVariant,
+        inverseSurface = LightInverseSurface,
+        inverseOnSurface = LightInverseOnSurface,
+        inversePrimary = LightInversePrimary,
+        scrim = Scrim,
+        surfaceTint = LightPrimary,
+        surfaceDim = LightSurfaceDim,
+        surfaceBright = LightSurfaceBright,
+        surfaceContainerLowest = LightSurfaceContainerLowest,
+        surfaceContainerLow = LightSurfaceContainerLow,
+        surfaceContainer = LightSurfaceContainer,
+        surfaceContainerHigh = LightSurfaceContainerHigh,
+        surfaceContainerHighest = LightSurfaceContainerHighest,
     )
 
-/**
- * Material Design 3 Stealth Color Scheme
- * Uses Neon colors: Black, Violet, Lime, White, Purple
- */
 private val StealthColorScheme =
     darkColorScheme(
         primary = StealthViolet,
@@ -119,21 +119,24 @@ private val StealthColorScheme =
         onSurfaceVariant = StealthWhite,
         outline = StealthLime,
         outlineVariant = StealthViolet,
+        inverseSurface = StealthWhite,
+        inverseOnSurface = StealthBlack,
+        inversePrimary = StealthLime,
+        scrim = Scrim,
+        surfaceTint = StealthViolet,
+        surfaceDim = StealthBlack,
+        surfaceBright = StealthSurfaceContainerHighest,
+        surfaceContainerLowest = StealthSurfaceContainerLowest,
+        surfaceContainerLow = StealthSurfaceContainerLow,
+        surfaceContainer = StealthSurfaceContainer,
+        surfaceContainerHigh = StealthSurfaceContainerHigh,
+        surfaceContainerHighest = StealthSurfaceContainerHighest,
     )
 
-/**
- * Material Design 3 Theme
- *
- * @param darkTheme Whether to use dark theme (default: true, follows system)
- * @param isStealthMode Whether stealth mode is active (enables Neon theme)
- * @param dynamicColor Whether to use dynamic color (Android 12+)
- * @param content The composable content
- */
 @Composable
 fun IMPSTRTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     isStealthMode: Boolean = false,
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
@@ -153,9 +156,10 @@ fun IMPSTRTheme(
         SideEffect {
             val window = (view.context.findActivity())?.window
             if (window != null) {
+                val lightBars = !isStealthMode && !darkTheme
                 WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = !darkTheme
-                    isAppearanceLightNavigationBars = !darkTheme
+                    isAppearanceLightStatusBars = lightBars
+                    isAppearanceLightNavigationBars = lightBars
                 }
             }
         }
@@ -169,9 +173,6 @@ fun IMPSTRTheme(
     )
 }
 
-/**
- * Helper to find the Activity from the current Context, un-wrapping ContextWrappers if needed.
- */
 private fun android.content.Context.findActivity(): android.app.Activity? {
     var context = this
     while (context is android.content.ContextWrapper) {

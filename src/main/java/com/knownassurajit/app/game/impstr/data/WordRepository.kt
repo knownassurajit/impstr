@@ -1,8 +1,12 @@
 package com.knownassurajit.app.game.impstr.data
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 object WordRepository {
-    var categories: MutableMap<String, List<String>> =
-        mutableMapOf(
+    private val builtinCategories: Map<String, List<String>> =
+        linkedMapOf(
             "Random Words" to
                 listOf(
                     "Lion",
@@ -816,39 +820,31 @@ object WordRepository {
                 ),
         )
 
-    fun getRandomWord(category: String): String {
-        val words =
-            if (category == "Random Words") {
-                // Aggregate all words from all categories except "Random Words" itself (to avoid duplicates if it just contains a mix)
-                // The original "Random Words" list seems to be a mix. We can use it or aggregate.
-                // The user request suggests "consider words from other categories".
-                // Implementation: Combine all lists.
-                categories.filterKeys { it != "Random Words" }.values.flatten()
-            } else {
-                categories[category] ?: emptyList()
-            }
+    private val _snapshot =
+        MutableStateFlow(CatalogSnapshot(builtin = builtinCategories))
+    val snapshot: StateFlow<CatalogSnapshot> = _snapshot.asStateFlow()
 
-        return words.randomOrNull() ?: "Imposter"
+    val categories: Map<String, List<String>>
+        get() = _snapshot.value.mergedCategories()
+
+    @Synchronized
+    fun applyOverlay(overlay: WordOverlay) {
+        _snapshot.value = CatalogSnapshot(builtin = builtinCategories, overlay = overlay)
     }
+
+    @Synchronized
+    fun clearOverlay() {
+        _snapshot.value = CatalogSnapshot(builtin = builtinCategories)
+    }
+
+    fun categoryNames(): List<String> = _snapshot.value.categoryNames()
+
+    fun getRandomWord(category: String): String = WordSelector.pickWord(category, _snapshot.value)
 
     /**
      * Returns a pair of two distinct random words from the given category.
      * Used in stealth mode: first = crewmate word, second = imposter decoy word.
      */
-    fun getRandomWordPair(category: String): Pair<String, String> {
-        val words =
-            if (category == "Random Words") {
-                categories.filterKeys { it != "Random Words" }.values.flatten()
-            } else {
-                categories[category] ?: emptyList()
-            }
-
-        if (words.size < 2) return Pair(words.firstOrNull() ?: "Imposter", "Decoy")
-
-        val shuffled = words.shuffled()
-        return Pair(shuffled[0], shuffled[1])
-    }
-
-    // Network update logic removed as per user request to rely on local data.
-    // To add more words, simply append to the categories map above.
+    fun getRandomWordPair(category: String): Pair<String, String> =
+        WordSelector.pickWordPair(category, _snapshot.value)
 }

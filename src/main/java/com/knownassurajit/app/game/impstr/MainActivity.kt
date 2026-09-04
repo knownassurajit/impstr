@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
@@ -36,20 +35,26 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import android.view.WindowManager
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.knownassurajit.app.game.impstr.ui.LocalInteractionTime
+import com.knownassurajit.app.game.impstr.ui.theme.Motion
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -61,14 +66,10 @@ import com.knownassurajit.app.game.impstr.ui.screens.HomeScreen
 import com.knownassurajit.app.game.impstr.ui.screens.ResultScreen
 import com.knownassurajit.app.game.impstr.ui.screens.RoleRevealScreen
 import com.knownassurajit.app.game.impstr.ui.screens.VotingScreen
+import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 import com.knownassurajit.app.game.impstr.ui.theme.IMPSTRTheme
 import com.knownassurajit.app.game.impstr.ui.viewmodel.GameViewModel
 import dagger.hilt.android.AndroidEntryPoint
-
-val LocalInteractionTime =
-    compositionLocalOf<MutableState<Long>> {
-        error("No Interaction Time provided")
-    }
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -87,6 +88,12 @@ class MainActivity : ComponentActivity() {
 
             IMPSTRTheme(isStealthMode = uiState.isStealthMode) {
                 CompositionLocalProvider(LocalInteractionTime provides interactionTime) {
+                    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+                        viewModel.onAppBackgrounded()
+                    }
+                    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+                        viewModel.onAppForegrounded()
+                    }
                     Surface(
                         modifier =
                             Modifier
@@ -102,34 +109,52 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background,
                     ) {
                         val navController = rememberNavController()
+                        val navBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentRoute = navBackStackEntry?.destination?.route
+
+                        LaunchedEffect(currentRoute) {
+                            if (currentRoute == "reveal") {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
+
+                        DisposableEffect(Unit) {
+                            onDispose { window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+                        }
 
                         NavHost(
                             navController = navController,
                             startDestination = "home",
                             modifier = Modifier.safeDrawingPadding(),
                             enterTransition = {
-                                slideIntoContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Left,
-                                    animationSpec = tween(300),
-                                ) + fadeIn(animationSpec = tween(300))
+                                fadeIn(animationSpec = Motion.enterTween()) +
+                                    slideIntoContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Left,
+                                        animationSpec = Motion.emphasizedTween<IntOffset>(Motion.DurationMedium),
+                                    )
                             },
                             exitTransition = {
-                                slideOutOfContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Left,
-                                    animationSpec = tween(300),
-                                ) + fadeOut(animationSpec = tween(300))
+                                fadeOut(animationSpec = Motion.exitTween()) +
+                                    slideOutOfContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Left,
+                                        animationSpec = Motion.emphasizedTween<IntOffset>(Motion.DurationShort),
+                                    )
                             },
                             popEnterTransition = {
-                                slideIntoContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Right,
-                                    animationSpec = tween(300),
-                                ) + fadeIn(animationSpec = tween(300))
+                                fadeIn(animationSpec = Motion.enterTween()) +
+                                    slideIntoContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = Motion.emphasizedTween<IntOffset>(Motion.DurationMedium),
+                                    )
                             },
                             popExitTransition = {
-                                slideOutOfContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Right,
-                                    animationSpec = tween(300),
-                                ) + fadeOut(animationSpec = tween(300))
+                                fadeOut(animationSpec = Motion.exitTween()) +
+                                    slideOutOfContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = Motion.emphasizedTween<IntOffset>(Motion.DurationShort),
+                                    )
                             },
                         ) {
                             composable("home") {
@@ -181,6 +206,7 @@ class MainActivity : ComponentActivity() {
                                         viewModel.startGame()
                                         navController.navigate("reveal")
                                     },
+                                    personalizationViewModel = hiltViewModel(),
                                 )
                             }
 
@@ -369,10 +395,10 @@ fun CreditsFooter() {
             Icon(
                 imageVector = Icons.Filled.Favorite,
                 contentDescription = "Love",
-                tint = Color(0xFF3BE6FF), // #3BE6FF color
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier =
                     Modifier
-                        .size(16.dp)
+                        .size(Dimens.IconSizeXs)
                         .padding(horizontal = 2.dp),
             )
             Text(
@@ -385,7 +411,7 @@ fun CreditsFooter() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Version 1.0.0",
+            text = "Version 1.1.0",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
         )
