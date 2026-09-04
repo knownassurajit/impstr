@@ -66,6 +66,7 @@ class GameViewModelTest {
         `when`(sharedPreferences.edit()).thenReturn(editor)
         `when`(editor.putInt(anyString(), anyInt())).thenReturn(editor)
         `when`(editor.putString(anyString(), anyString())).thenReturn(editor)
+        `when`(editor.putBoolean(anyString(), org.mockito.ArgumentMatchers.anyBoolean())).thenReturn(editor)
         
         // Default config
         `when`(sharedPreferences.getInt("player_count", 4)).thenReturn(4)
@@ -102,6 +103,9 @@ class GameViewModelTest {
         // Set to 5 players
         viewModel.updatePlayerCount(5)
         assertEquals(5, viewModel.uiState.value.players.size)
+
+        viewModel.updatePlayerCount(20)
+        assertEquals(10, viewModel.uiState.value.players.size)
         
         // Check imposter limit logic
         // 5 players -> max 2 imposters
@@ -212,5 +216,24 @@ class GameViewModelTest {
         // Verify all imposters see a word (revealed role word is tested in UI but logic check here)
         val imposters = state.players.filter { it.isImposter }
         assertTrue(imposters.isNotEmpty())
+    }
+
+    @Test
+    fun fullLifecycle_setupRevealDiscussionVote_crewmatesWin() {
+        viewModel.updatePlayerCount(3)
+        viewModel.updateImposterCount(1)
+        viewModel.startGame()
+        assertEquals(GamePhase.ROLE_REVEAL, viewModel.uiState.value.phase)
+        repeat(viewModel.uiState.value.players.size) {
+            viewModel.nextPlayerReveal()
+        }
+        viewModel.startDiscussion()
+        assertEquals(GamePhase.DISCUSSION, viewModel.uiState.value.phase)
+        viewModel.startVoting()
+        assertEquals(GamePhase.HOST_VOTING, viewModel.uiState.value.phase)
+        val imposter = viewModel.uiState.value.players.first { it.isImposter }
+        viewModel.castVote(listOf(imposter.id))
+        assertEquals(GamePhase.RESULT, viewModel.uiState.value.phase)
+        assertEquals("Crewmates", viewModel.uiState.value.winner)
     }
 }

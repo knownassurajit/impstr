@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import com.knownassurajit.app.game.impstr.ui.theme.Alpha
+import com.knownassurajit.app.game.impstr.ui.theme.Corners
+import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 
 /**
  * Split Button Component
@@ -35,24 +37,23 @@ fun SplitButton(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Surface(
-        modifier = modifier.height(56.dp),
-        shape = MaterialTheme.shapes.medium, // Expressive shape
+        modifier = modifier.height(Dimens.ButtonHeight),
+        shape = MaterialTheme.shapes.medium,
         color = containerColor,
         contentColor = contentColor,
-        tonalElevation = 2.dp,
+        tonalElevation = Dimens.ElevationBase,
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Main Action Area
             Box(
                 modifier =
                     Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable(onClick = onMainClick)
-                        .padding(start = 16.dp, end = 8.dp),
+                        .padding(start = Dimens.CardPadding, end = Dimens.SpacingSm),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -60,20 +61,18 @@ fun SplitButton(
                 }
             }
 
-            // Separator
             Box(
                 modifier =
                     Modifier
-                        .width(1.dp)
-                        .height(32.dp)
-                        .background(contentColor.copy(alpha = 0.2f)),
+                        .width(Dimens.BorderWidth)
+                        .height(Dimens.AvatarSmall)
+                        .background(contentColor.copy(alpha = Alpha.Divider + 0.08f)),
             )
 
-            // Secondary Action Area (Pet Tool)
             Box(
                 modifier =
                     Modifier
-                        .width(56.dp)
+                        .width(Dimens.ButtonHeight)
                         .fillMaxHeight()
                         .clickable(onClick = onSecondaryClick),
                 contentAlignment = Alignment.Center,
@@ -108,7 +107,7 @@ fun ModalSideSheet(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f)) // Scrim
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = Alpha.Scrim + 0.18f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -121,18 +120,17 @@ fun ModalSideSheet(
                 modifier =
                     Modifier
                         .fillMaxHeight()
-                        .width(320.dp) // Fixed width for side sheet
+                        .width(Dimens.SideSheetWidth)
                         .clickable(enabled = false) {},
-                // Prevent clicks passing through
-                shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp), // SideSheet specific
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp,
+                shape = Corners.SideSheet,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = Dimens.ElevationHigh,
             ) {
                 Column(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .padding(24.dp),
+                            .padding(Dimens.SheetPadding),
                 ) {
                     content()
                 }
@@ -158,7 +156,7 @@ fun ImposterCard(
 
     if (isOutlined) {
         val colors = CardDefaults.outlinedCardColors(containerColor = containerColor)
-        val border = BorderStroke(1.dp, borderColor)
+        val border = BorderStroke(Dimens.BorderWidth, borderColor)
 
         if (onClick != null) {
             OutlinedCard(
@@ -195,6 +193,40 @@ fun ImposterCard(
                 shape = shape,
                 colors = colors,
                 content = content,
+            )
+        }
+    }
+}
+
+@Composable
+fun ImpstrPrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(Dimens.ButtonHeight)
+                .defaultMinSize(minHeight = Dimens.TouchTargetMin),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        if (icon != null) {
+            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(Dimens.IconSizeSm),
             )
         }
     }

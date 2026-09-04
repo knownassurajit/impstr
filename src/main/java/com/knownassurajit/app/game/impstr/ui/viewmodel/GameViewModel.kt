@@ -3,12 +3,15 @@ package com.knownassurajit.app.game.impstr.ui.viewmodel
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knownassurajit.app.game.impstr.data.PlayerNameSanitizer
 import com.knownassurajit.app.game.impstr.data.WordRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -145,6 +148,10 @@ class GameViewModel
 
         private var timerJob: Job? = null
         private var gameTimerJob: Job? = null // For total game duration
+        private var saveJob: Job? = null
+        private var timersPaused = false
+        private var pausedGameElapsed: Long = 0
+        private var pausedDiscussionElapsed: Long = 0
 
         private fun updateState(update: (GameState) -> GameState) {
             _uiState.update(update)
@@ -160,9 +167,14 @@ class GameViewModel
             }
 
             viewModelScope.launch {
-                uiState.collect {
-                    savedStateHandle["gameState"] = it
-                }
+                uiState
+                    .map { state ->
+                        state.copy(elapsedTime = 0, totalGameTime = 0, roundStartTime = 0)
+                    }
+                    .distinctUntilChanged()
+                    .collect {
+                        savedStateHandle["gameState"] = it
+                    }
             }
         }
 
@@ -174,11 +186,13 @@ class GameViewModel
 
             val players =
                 if (playerNamesString != null) {
-                    playerNamesString.split(";;;").filter { it.isNotEmpty() }.map { PlayerState(name = it) }
+                    playerNamesString.split(";;;").filter { it.isNotEmpty() }.mapIndexed { index, raw ->
+                        PlayerState(name = PlayerNameSanitizer.sanitize(raw, "Player ${index + 1}"))
+                    }
                 } else {
                     // Default 4 players
                     List(4) { PlayerState(name = "Player ${it + 1}") }
-                }
+                }.take(PlayerNameSanitizer.MaxPlayers)
 
             // Validate loaded imposter count
             val maxImposters = max(1, players.size - 1)
@@ -195,6 +209,15 @@ class GameViewModel
         }
 
         private fun saveConfig() {
+            saveJob?.cancel()
+            saveJob =
+                viewModelScope.launch {
+                    delay(250)
+                    persistConfig()
+                }
+        }
+
+        private fun persistConfig() {
             val state = _uiState.value
             val names = state.players.joinToString(";;;") { it.name }
             prefs.edit().apply {
@@ -213,7 +236,7 @@ class GameViewModel
          * @param count The target number of total players.
          */
         fun updatePlayerCount(count: Int) {
-            val safeCount = max(3, count) // Ensure minimum 3 players
+            val safeCount = count.coerceIn(PlayerNameSanitizer.MinPlayers, PlayerNameSanitizer.MaxPlayers)
             updateState { currentState ->
                 val currentPlayers = currentState.players
                 val newPlayers =
@@ -267,7 +290,8 @@ class GameViewModel
             updateState { currentState ->
                 val players = currentState.players.toMutableList()
                 if (index in players.indices) {
-                    players[index] = players[index].copy(name = name)
+                    val fallback = "Player ${index + 1}"
+                    players[index] = players[index].copy(name = PlayerNameSanitizer.sanitize(name, fallback))
                 }
                 currentState.copy(players = players)
             }
@@ -325,11 +349,41 @@ class GameViewModel
             startGameTimer()
         }
 
-        private fun startGameTimer() {
+        fun onAppBackgrounded() {
+            val phase = _uiState.value.phase
+            if (phase == GamePhase.SETUP || phase == GamePhase.RESULT) return
+            pauseTimers()
+        }
+
+        fun onAppForegrounded() {
+            if (!timersPaused) return
+            resumeTimers()
+        }
+
+        private fun pauseTimers() {
+            val state = _uiState.value
+            pausedGameElapsed = state.totalGameTime
+            pausedDiscussionElapsed = state.elapsedTime
+            timerJob?.cancel()
+            gameTimerJob?.cancel()
+            timersPaused = true
+        }
+
+        private fun resumeTimers() {
+            timersPaused = false
+            val phase = _uiState.value.phase
+            if (phase == GamePhase.SETUP || phase == GamePhase.RESULT) return
+            startGameTimer(resumeFrom = pausedGameElapsed)
+            if (phase == GamePhase.DISCUSSION) {
+                startPhaseTimer(resumeFrom = pausedDiscussionElapsed)
+            }
+        }
+
+        private fun startGameTimer(resumeFrom: Long = 0) {
             gameTimerJob?.cancel()
             gameTimerJob =
                 viewModelScope.launch {
-                    val startTime = System.currentTimeMillis()
+                    val startTime = System.currentTimeMillis() - resumeFrom * 1000
                     while (true) {
                         val now = System.currentTimeMillis()
                         val totalElapsed = (now - startTime) / 1000
@@ -382,20 +436,17 @@ class GameViewModel
             startPhaseTimer()
         }
 
-        private fun startPhaseTimer() {
+        private fun startPhaseTimer(resumeFrom: Long = 0) {
             timerJob?.cancel()
+            val anchor = System.currentTimeMillis() - resumeFrom * 1000
             timerJob =
                 viewModelScope.launch {
                     while (_uiState.value.phase == GamePhase.DISCUSSION) {
-                        val startTime = _uiState.value.roundStartTime
-                        if (startTime > 0) {
-                            val elapsed = (System.currentTimeMillis() - startTime) / 1000
-                            if (elapsed != _uiState.value.elapsedTime) {
-                                // Only update if changed to avoid excessive recomposition/state updates
-                                updateState { it.copy(elapsedTime = elapsed) }
-                            }
+                        val elapsed = (System.currentTimeMillis() - anchor) / 1000
+                        if (elapsed != _uiState.value.elapsedTime) {
+                            updateState { it.copy(elapsedTime = elapsed) }
                         }
-                        delay(200) // Check more frequently than 1s to be accurate
+                        delay(200)
                     }
                 }
         }
@@ -528,6 +579,7 @@ class GameViewModel
             val state = _uiState.value
             if (state.phase == GamePhase.RESULT || state.phase == GamePhase.SETUP) return
 
+            timersPaused = false
             gameTimerJob?.cancel() // Stop global timer
             timerJob?.cancel()
             if (state.winner == null) {
@@ -570,6 +622,9 @@ class GameViewModel
         fun resetGame() {
             timerJob?.cancel()
             gameTimerJob?.cancel()
+            timersPaused = false
+            pausedGameElapsed = 0
+            pausedDiscussionElapsed = 0
             // Reload config to get original players list order/state?
             // Or keep current players but reset game state?
             // User said "go to lobby" -> usually implies resetting game-specifics but keeping lobby config.

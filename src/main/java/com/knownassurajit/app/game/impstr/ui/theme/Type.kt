@@ -1,154 +1,73 @@
 package com.knownassurajit.app.game.impstr.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.knownassurajit.app.game.impstr.R
 
-// Expressive Fonts (Mimicking Google Sans)
-// Poppins for Headlines (Geometric, Friendly)
+/**
+ * IMPSTR type scale — Material 3 sizes/line-heights/tracking with Poppins.
+ * Poppins is the only bundled TrueType family (Inter/Roboto assets were invalid HTML).
+ * includeFontPadding is off so Poppins ascenders stay inside the M3 line box.
+ */
 val DisplayFont =
     FontFamily(
         Font(R.font.poppins_regular, FontWeight.Normal),
+        Font(R.font.poppins_medium, FontWeight.Medium),
         Font(R.font.poppins_semibold, FontWeight.SemiBold),
+        Font(R.font.poppins_bold, FontWeight.Bold),
     )
 
-// Inter for Body (Clean, Readable)
-// REPLACED: Inter and Roboto font files caused crashes. Using Poppins for consistency and stability.
 val BodyFont = DisplayFont
 
-// Roboto for "IMPSTR" Logo specifically
-// REPLACED: Roboto font files caused crashes. Using Poppins.
 val LogoFont = DisplayFont
+
+private val ImpstrPlatformStyle = PlatformTextStyle(includeFontPadding = false)
+
+private val ImpstrLineHeightStyle =
+    LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    )
+
+private fun impstrStyle(
+    fontWeight: FontWeight,
+    fontSize: TextUnit,
+    lineHeight: TextUnit,
+    letterSpacing: TextUnit,
+    fontFamily: FontFamily = DisplayFont,
+): TextStyle =
+    TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = fontWeight,
+        fontSize = fontSize,
+        lineHeight = lineHeight,
+        letterSpacing = letterSpacing,
+        platformStyle = ImpstrPlatformStyle,
+        lineHeightStyle = ImpstrLineHeightStyle,
+    )
 
 val Typography =
     Typography(
-        // Display styles - Large, impactful text
-        displayLarge =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 57.sp,
-                lineHeight = 64.sp,
-                letterSpacing = (-0.25).sp,
-            ),
-        displayMedium =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 45.sp,
-                lineHeight = 52.sp,
-                letterSpacing = 0.sp,
-            ),
-        displaySmall =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 36.sp,
-                lineHeight = 44.sp,
-                letterSpacing = 0.sp,
-            ),
-        // Headline styles - Section headers
-        headlineLarge =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 32.sp,
-                lineHeight = 40.sp,
-                letterSpacing = 0.sp,
-            ),
-        headlineMedium =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 28.sp,
-                lineHeight = 36.sp,
-                letterSpacing = 0.sp,
-            ),
-        headlineSmall =
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 24.sp,
-                lineHeight = 32.sp,
-                letterSpacing = 0.sp,
-            ),
-        // Title styles - Emphasized text
-        titleLarge =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 22.sp,
-                lineHeight = 28.sp,
-                letterSpacing = 0.sp,
-            ),
-        titleMedium =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
-                letterSpacing = 0.15.sp,
-            ),
-        titleSmall =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                letterSpacing = 0.1.sp,
-            ),
-        // Body styles - Main content text
-        bodyLarge =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
-            ),
-        bodyMedium =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                letterSpacing = 0.25.sp,
-            ),
-        bodySmall =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.4.sp,
-            ),
-        // Label styles - UI labels and buttons
-        labelLarge =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                letterSpacing = 0.1.sp,
-            ),
-        labelMedium =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.5.sp,
-            ),
-        labelSmall =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.5.sp,
-            ),
+        displayLarge = impstrStyle(FontWeight.Bold, 57.sp, 64.sp, (-0.25).sp),
+        displayMedium = impstrStyle(FontWeight.Bold, 45.sp, 52.sp, 0.sp),
+        displaySmall = impstrStyle(FontWeight.Bold, 36.sp, 44.sp, 0.sp),
+        headlineLarge = impstrStyle(FontWeight.SemiBold, 32.sp, 40.sp, 0.sp),
+        headlineMedium = impstrStyle(FontWeight.SemiBold, 28.sp, 36.sp, 0.sp),
+        headlineSmall = impstrStyle(FontWeight.SemiBold, 24.sp, 32.sp, 0.sp),
+        titleLarge = impstrStyle(FontWeight.SemiBold, 22.sp, 28.sp, 0.sp, BodyFont),
+        titleMedium = impstrStyle(FontWeight.SemiBold, 16.sp, 24.sp, 0.15.sp, BodyFont),
+        titleSmall = impstrStyle(FontWeight.SemiBold, 14.sp, 20.sp, 0.1.sp, BodyFont),
+        bodyLarge = impstrStyle(FontWeight.Normal, 16.sp, 24.sp, 0.5.sp, BodyFont),
+        bodyMedium = impstrStyle(FontWeight.Normal, 14.sp, 20.sp, 0.25.sp, BodyFont),
+        bodySmall = impstrStyle(FontWeight.Normal, 12.sp, 16.sp, 0.4.sp, BodyFont),
+        labelLarge = impstrStyle(FontWeight.SemiBold, 14.sp, 20.sp, 0.1.sp, BodyFont),
+        labelMedium = impstrStyle(FontWeight.SemiBold, 12.sp, 16.sp, 0.5.sp, BodyFont),
+        labelSmall = impstrStyle(FontWeight.SemiBold, 11.sp, 16.sp, 0.5.sp, BodyFont),
     )

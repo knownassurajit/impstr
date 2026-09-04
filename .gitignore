@@ -24,8 +24,7 @@ local.properties
 # ── Android Specific ─────────────────────────────────────────
 *.apk
 *.aab
-release/
-debug/
+/release/
 output.json
 
 # ── Signing / Keystore ───────────────────────────────────────
@@ -86,3 +85,8 @@ build_output.txt
 !.github/
 !src/
 !gradle/
+
+# ECC / Cursor local logs
+.cursor/*.log
+.cursor/ecc-install-state.json
+.ecc/

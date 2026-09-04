@@ -43,11 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
 import com.knownassurajit.app.game.impstr.ui.theme.Anim
 import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 import com.knownassurajit.app.game.impstr.ui.theme.GameColors
@@ -139,7 +141,7 @@ fun RoleRevealScreen(
                 IconButton(onClick = { showExitDialog = true }) {
                     Icon(
                         Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.cd_back),
                         tint = MaterialTheme.colorScheme.onBackground,
                     )
                 }
@@ -154,7 +156,7 @@ fun RoleRevealScreen(
                 IconButton(onClick = { showHelpDialog = true }) {
                     Icon(
                         Icons.Rounded.Info,
-                        contentDescription = "Help",
+                        contentDescription = stringResource(R.string.cd_help),
                         tint = MaterialTheme.colorScheme.onBackground,
                     )
                 }
@@ -174,7 +176,7 @@ fun RoleRevealScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(Dimens.SpacingSm) // Slightly taller for expressive
+                        .height(Dimens.ProgressHeight)
                         .clip(MaterialTheme.shapes.extraSmall),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -188,19 +190,19 @@ fun RoleRevealScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
+                        .height(Dimens.RevealHeroHeight),
                 // Fixed height to prevent layout shift
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (isFlipped) "Memorize your secret" else "Pass the phone to",
+                        text = if (isFlipped) stringResource(R.string.reveal_memorize) else stringResource(R.string.reveal_pass_to),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Dimens.SpacingSm))
                     // Reserve space for name even if moved
                     if (!isFlipped) {
                         Text(
@@ -227,7 +229,7 @@ fun RoleRevealScreen(
                         text = "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = Dimens.SpacingSm),
                     )
                 }
             }
@@ -246,7 +248,8 @@ fun RoleRevealScreen(
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = Dimens.SpacingLg)
+                        .testTag(ImpstrTestTags.RoleCard),
                 front = {
                     Card(
                         modifier = Modifier.fillMaxSize(),
@@ -258,14 +261,14 @@ fun RoleRevealScreen(
                                 Modifier
                                     .fillMaxSize()
                                     .background(bgBrush)
-                                    .padding(24.dp),
+                                    .padding(Dimens.SheetPadding),
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier =
                                         Modifier
-                                            .size(96.dp)
+                                            .size(Dimens.AvatarLarge)
                                             .clip(CircleShape)
                                             .background(Color.White.copy(alpha = 0.05f)),
                                     contentAlignment = Alignment.Center,
@@ -274,15 +277,14 @@ fun RoleRevealScreen(
                                         Icons.Rounded.Lock,
                                         contentDescription = null,
                                         tint = Color.White.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(48.dp),
+                                        modifier = Modifier.size(Dimens.AvatarMedium),
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(Dimens.SpacingXl))
                                 Text(
-                                    "TAP TO REVEAL",
+                                    stringResource(R.string.reveal_tap),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = Color.White.copy(alpha = 0.6f),
-                                    letterSpacing = 2.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
@@ -302,7 +304,7 @@ fun RoleRevealScreen(
                                 Modifier
                                     .fillMaxSize()
                                     .background(bgBrush)
-                                    .padding(24.dp),
+                                    .padding(Dimens.SheetPadding),
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -312,18 +314,15 @@ fun RoleRevealScreen(
                                 val cardWordColor: Color
 
                                 if (isImposter && !isStealth) {
-                                    // Classic mode: explicit imposter reveal
-                                    cardLabel = "YOU ARE THE"
-                                    cardWord = "IMPOSTER"
+                                    cardLabel = stringResource(R.string.reveal_you_are)
+                                    cardWord = stringResource(R.string.reveal_imposter)
                                     cardWordColor = GameColors.ImposterRed
                                 } else if (isImposter && isStealth) {
-                                    // Stealth mode: imposter gets a different word (looks normal)
-                                    cardLabel = "THE SECRET WORD IS"
+                                    cardLabel = stringResource(R.string.reveal_secret_is)
                                     cardWord = imposterWord
                                     cardWordColor = Color.White
                                 } else {
-                                    // Crewmate
-                                    cardLabel = "THE SECRET WORD IS"
+                                    cardLabel = stringResource(R.string.reveal_secret_is)
                                     cardWord = secretWord
                                     cardWordColor = Color.White
                                 }
@@ -332,10 +331,9 @@ fun RoleRevealScreen(
                                     cardLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.White.copy(alpha = 0.5f),
-                                    letterSpacing = 2.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(Dimens.SpacingLg))
                                 Text(
                                     cardWord,
                                     style = MaterialTheme.typography.displayMedium,
@@ -343,22 +341,22 @@ fun RoleRevealScreen(
                                     fontWeight = FontWeight.Black,
                                     textAlign = TextAlign.Center,
                                 )
-                                Spacer(modifier = Modifier.height(32.dp))
+                                Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
                                 Surface(
                                     shape = MaterialTheme.shapes.small,
                                     color = Color.White.copy(alpha = 0.1f),
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(horizontal = Dimens.SpacingLg, vertical = Dimens.SpacingSm),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Icon(
                                             Icons.Rounded.Lock,
                                             contentDescription = null,
                                             tint = Color.White.copy(alpha = 0.6f),
-                                            modifier = Modifier.size(16.dp),
+                                            modifier = Modifier.size(Dimens.IconSizeXs),
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                                         Text(
                                             category.uppercase(),
                                             style = MaterialTheme.typography.labelSmall,
@@ -376,31 +374,35 @@ fun RoleRevealScreen(
             Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
             // Action Button
+            val revealActionLabel =
+                if (isFlipped) {
+                    if (isLastPlayer) stringResource(R.string.action_start_discussion) else stringResource(R.string.action_next_player)
+                } else {
+                    stringResource(R.string.action_reveal_role)
+                }
             FilledTonalButton(
                 onClick = {
                     if (isFlipped) {
                         if (isLastPlayer) {
                             onNext()
                         } else {
-                            // Flip back first
                             isFlipped = false
-                            isTransitioning = true // Update text immediately
+                            isTransitioning = true
                             scope.launch {
-                                // Wait for flip to complete
                                 delay(Anim.DurationCardFlip.toLong())
                                 viewModel.nextPlayerReveal()
                                 isTransitioning = false
                             }
                         }
                     } else {
-                        // Trigger flip if button clicked instead of card
                         isFlipped = true
                     }
                 },
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(Dimens.ButtonHeight),
+                        .height(Dimens.ButtonHeight)
+                        .testTag(ImpstrTestTags.RevealPrimary),
                 shape = MaterialTheme.shapes.medium,
                 colors =
                     androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
@@ -409,16 +411,11 @@ fun RoleRevealScreen(
                     ),
             ) {
                 Text(
-                    text =
-                        if (isFlipped) {
-                            if (isLastPlayer) "Start Discussion" else "Next Player"
-                        } else {
-                            "Reveal Role"
-                        },
+                    text = revealActionLabel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                 Icon(Icons.Rounded.Check, contentDescription = null)
             }
         }

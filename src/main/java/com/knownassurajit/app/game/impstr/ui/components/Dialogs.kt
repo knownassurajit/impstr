@@ -25,9 +25,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 
 @Composable
 fun HelpDialog(onDismiss: () -> Unit) {
@@ -35,17 +37,17 @@ fun HelpDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "How to Play",
+                text = stringResource(R.string.how_to_play),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMd)) {
                 HelpItem(number = "1", text = "Everyone gets a secret word, except the Imposter.")
                 HelpItem(number = "2", text = "Describe your word without giving it away.")
                 HelpItem(number = "3", text = "Vote to eliminate who you think is the Imposter.")
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingLg))
                 Text(
                     text = "Made with 💜 by Surajit Das.",
                     style = MaterialTheme.typography.labelMedium,
@@ -71,17 +73,17 @@ fun HelpItem(
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
             shape = MaterialTheme.shapes.small,
-            modifier = Modifier.padding(top = 2.dp),
+            modifier = Modifier.padding(top = Dimens.OpticalInset),
         ) {
             Text(
                 number,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = Dimens.SpacingSm, vertical = Dimens.SpacingXs),
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(Dimens.SpacingMd))
         Text(
             text,
             style = MaterialTheme.typography.bodyLarge,
@@ -101,39 +103,39 @@ fun ExitConfirmationDialog(
     BasicAlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier.padding(24.dp),
+        modifier = Modifier.padding(Dimens.SheetPadding),
     ) {
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 6.dp,
+            tonalElevation = Dimens.ElevationHigh,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(Dimens.SheetPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     Icons.Rounded.Warning,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 16.dp),
+                    modifier = Modifier.padding(bottom = Dimens.SpacingLg),
                 )
                 Text(
-                    text = "Exit Game?",
+                    text = stringResource(R.string.exit_game),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingSm))
                 Text(
-                    text = "Current game progress will be lost.",
+                    text = stringResource(R.string.exit_progress_lost),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
                     if (showResumeButton) {
                         Button(
                             onClick = onDismiss,
@@ -144,7 +146,7 @@ fun ExitConfirmationDialog(
                                     contentColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
                         ) {
-                            Text("Resume Game")
+                            Text(stringResource(R.string.resume_game))
                         }
                     }
 

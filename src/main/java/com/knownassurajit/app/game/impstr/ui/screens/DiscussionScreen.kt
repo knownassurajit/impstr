@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,10 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
+import com.knownassurajit.app.game.impstr.ui.components.ImpstrPrimaryButton
 import com.knownassurajit.app.game.impstr.ui.components.KeepScreenOn
 import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 import com.knownassurajit.app.game.impstr.ui.theme.Anim
@@ -83,16 +84,15 @@ fun DiscussionScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "DISCUSSION PHASE",
+                    text = stringResource(R.string.discussion_phase),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
                 )
             }
             Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Text(
-                text = "Talk with your friends to find the imposter.\nKeep it civil!",
+                text = stringResource(R.string.discussion_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -129,11 +129,10 @@ fun DiscussionScreen(
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = "TOTAL TIME",
+                                text = stringResource(R.string.total_time),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 2.sp,
                             )
                         }
                     }
@@ -143,7 +142,8 @@ fun DiscussionScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             // Proceed Button
-            FilledTonalButton(
+            ImpstrPrimaryButton(
+                text = stringResource(R.string.proceed_to_voting),
                 onClick = {
                     val currentState = viewModel.uiState.value
                     if (currentState.phase == com.knownassurajit.app.game.impstr.ui.viewmodel.GamePhase.DISCUSSION) {
@@ -151,23 +151,8 @@ fun DiscussionScreen(
                         onVotingStart()
                     }
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(Dimens.ButtonHeight),
-                shape = MaterialTheme.shapes.medium,
-                colors =
-                    ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-            ) {
-                Text(
-                    text = "Proceed to Voting",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                modifier = Modifier.testTag(ImpstrTestTags.ProceedVoting),
+            )
 
             Spacer(modifier = Modifier.height(Dimens.SpacingLg))
         }

@@ -25,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
 import com.knownassurajit.app.game.impstr.ui.components.ImposterCard
 import com.knownassurajit.app.game.impstr.ui.components.KeepScreenOn
 import com.knownassurajit.app.game.impstr.ui.theme.*
@@ -80,7 +82,7 @@ fun VotingScreen(
                 id = p.id,
                 name = p.name,
                 color = PlayerColors[index % PlayerColors.size],
-                status = if (p.isEliminated) "Eliminated" else "Alive",
+                status = if (p.isEliminated) stringResource(R.string.status_eliminated) else stringResource(R.string.status_alive),
                 isImposter = p.isImposter,
                 isEliminated = p.isEliminated,
             )
@@ -102,31 +104,29 @@ fun VotingScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(Dimens.SheetPadding),
             ) {
                 Text(
-                    text = "VOTING PHASE",
+                    text = stringResource(R.string.voting_phase),
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary, // Pop color
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXs))
                 Text(
-                    text = if (maxSelections > 1) "Select $maxSelections\nto Eliminate" else "Who is the\nImposter?",
+                    text = if (maxSelections > 1) stringResource(R.string.voting_select_many, maxSelections) else stringResource(R.string.voting_who),
                     style = MaterialTheme.typography.displayMedium, // Poppins
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
-                    lineHeight = MaterialTheme.typography.displayMedium.fontSize.times(1.1f),
                 )
             }
 
             // Players Grid
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLg),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingLg),
+                contentPadding = PaddingValues(horizontal = Dimens.SheetPadding, vertical = Dimens.SpacingSm),
                 modifier = Modifier.weight(1f),
             ) {
                 items(players) { player ->
@@ -167,18 +167,17 @@ fun VotingScreen(
             // Bottom Action Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 8.dp,
-                shape = com.knownassurajit.app.game.impstr.ui.theme.Corners.BottomBar,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = Dimens.ElevationMax,
+                shape = Corners.BottomBar,
             ) {
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            .padding(Dimens.SheetPadding),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLg),
                 ) {
-                    // Skip Vote Button
                     OutlinedButton(
                         onClick = {
                             val currentState = viewModel.uiState.value
@@ -190,15 +189,15 @@ fun VotingScreen(
                         modifier =
                             Modifier
                                 .weight(1f)
-                                .height(56.dp),
+                                .height(Dimens.ButtonHeight)
+                                .testTag(ImpstrTestTags.SkipVote),
                         shape = MaterialTheme.shapes.medium,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        border = androidx.compose.foundation.BorderStroke(Dimens.BorderWidth, MaterialTheme.colorScheme.outline),
                     ) {
-                        Text("Skip Vote", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.skip_vote), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
 
-                    // Submit Vote Button
-                    FilledTonalButton(
+                    Button(
                         onClick = {
                             if (selectedPlayerIds.isNotEmpty()) {
                                 val currentState = viewModel.uiState.value
@@ -213,15 +212,11 @@ fun VotingScreen(
                         modifier =
                             Modifier
                                 .weight(1f)
-                                .height(56.dp),
+                                .height(Dimens.ButtonHeight)
+                                .testTag(ImpstrTestTags.SubmitVote),
                         shape = MaterialTheme.shapes.medium,
-                        colors =
-                            ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
                     ) {
-                        Text("Submit Vote", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.submit_vote), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -265,7 +260,7 @@ fun VoteCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(Dimens.VoteCardHeight),
         isOutlined = !isSelected && !isEliminated, // Outlined only if active and not selected
         containerColor = containerColor,
         borderColor = borderColor,
@@ -275,7 +270,7 @@ fun VoteCard(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(Dimens.CardPadding)
                     .alpha(if (isEliminated) 0.6f else 1f),
         ) {
             // Selection Checkmark
@@ -284,16 +279,16 @@ fun VoteCard(
                     modifier =
                         Modifier
                             .align(Alignment.TopEnd)
-                            .size(32.dp)
+                            .size(Dimens.AvatarSmall)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Rounded.Check,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.submit_vote),
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(Dimens.IconSizeSm),
                     )
                 }
             }
@@ -303,11 +298,11 @@ fun VoteCard(
                 Surface(
                     modifier = Modifier.align(Alignment.TopStart),
                     color = MaterialTheme.colorScheme.errorContainer,
-                    shape = com.knownassurajit.app.game.impstr.ui.theme.Corners.Badge,
+                    shape = Corners.Badge,
                 ) {
                     Text(
-                        "ELIMINATED",
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        stringResource(R.string.status_eliminated),
+                        modifier = Modifier.padding(horizontal = Dimens.SpacingSm, vertical = Dimens.OpticalInset),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         fontWeight = FontWeight.Bold,
@@ -325,7 +320,7 @@ fun VoteCard(
                 Box(
                     modifier =
                         Modifier
-                            .size(72.dp)
+                            .size(Dimens.AvatarLarge)
                             .clip(CircleShape)
                             .background(player.color),
                     contentAlignment = Alignment.Center,
@@ -334,10 +329,10 @@ fun VoteCard(
                         player.name.firstOrNull()?.toString() ?: "?",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.Black.copy(alpha = 0.7f),
+                        color = GameColors.OnVibrant,
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingLg))
                 Text(
                     text = player.name,
                     style = MaterialTheme.typography.titleMedium,

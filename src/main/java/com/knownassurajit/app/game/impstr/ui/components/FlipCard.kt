@@ -1,8 +1,8 @@
 package com.knownassurajit.app.game.impstr.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import com.knownassurajit.app.game.impstr.ui.theme.Motion
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -29,7 +29,7 @@ fun FlipCard(
         animationSpec =
             tween(
                 durationMillis = flipDurationMs,
-                easing = FastOutSlowInEasing,
+                easing = Motion.EmphasizedEasing,
             ),
         label = "cardFlip",
     )

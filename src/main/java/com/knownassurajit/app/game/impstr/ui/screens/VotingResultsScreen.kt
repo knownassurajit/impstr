@@ -31,11 +31,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
 import com.knownassurajit.app.game.impstr.ui.components.KeepScreenOn
+import com.knownassurajit.app.game.impstr.ui.theme.Dimens
+import com.knownassurajit.app.game.impstr.ui.theme.GameColors
 import com.knownassurajit.app.game.impstr.ui.viewmodel.GameViewModel
 import com.knownassurajit.app.game.impstr.ui.viewmodel.PlayerState
 
@@ -81,18 +85,18 @@ fun VotingResultsScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(Dimens.SheetPadding),
             ) {
                 Text(
-                    text = "VOTING RESULTS",
+                    text = stringResource(R.string.voting_results),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXs))
                 if (eliminatedPlayers.isEmpty()) {
                     Text(
-                        text = "Nobody got\nkicked out",
+                        text = stringResource(R.string.nobody_kicked),
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
@@ -100,7 +104,7 @@ fun VotingResultsScreen(
                     )
                 } else {
                     Text(
-                        text = "${eliminatedPlayers.size} Player(s)\nEjected",
+                        text = stringResource(R.string.players_ejected, eliminatedPlayers.size),
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
@@ -115,20 +119,19 @@ fun VotingResultsScreen(
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = Dimens.SheetPadding)
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
-                // Timer Circle (Matches DiscussionScreen)
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(280.dp),
+                    modifier = Modifier.size(Dimens.TimerCircleOuter),
                 ) {
                     ElevatedCard(
-                        modifier = Modifier.size(240.dp),
+                        modifier = Modifier.size(Dimens.TimerCircleInner),
                         shape = androidx.compose.foundation.shape.CircleShape,
                         colors =
                             CardDefaults.elevatedCardColors(
@@ -136,7 +139,7 @@ fun VotingResultsScreen(
                             ),
                         elevation =
                             CardDefaults.elevatedCardElevation(
-                                defaultElevation = 4.dp,
+                                defaultElevation = Dimens.ElevationSlight,
                             ),
                     ) {
                         Box(
@@ -150,22 +153,21 @@ fun VotingResultsScreen(
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = "TOTAL TIME",
+                                    text = stringResource(R.string.total_time),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Bold,
-                                    letterSpacing = 2.sp,
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
                 if (eliminatedPlayers.isNotEmpty()) {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         eliminatedPlayers.forEach { player ->
@@ -174,32 +176,32 @@ fun VotingResultsScreen(
                     }
                 } else {
                     Text(
-                        text = "Skipped vote",
+                        text = stringResource(R.string.skipped_vote),
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
             }
 
             // Bottom Action Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = Dimens.ElevationSlight,
             ) {
                 Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(Dimens.SheetPadding),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
                 ) {
                     if (!isGameOver) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
                         ) {
                             FilledTonalButton(
                                 onClick = {
@@ -210,15 +212,11 @@ fun VotingResultsScreen(
                                 modifier =
                                     Modifier
                                         .weight(1f)
-                                        .height(56.dp),
+                                        .height(Dimens.ButtonHeight)
+                                        .testTag(ImpstrTestTags.NextRound),
                                 shape = MaterialTheme.shapes.medium,
-                                colors =
-                                    androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    ),
                             ) {
-                                Text("Next Round", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.next_round), fontWeight = FontWeight.Bold)
                             }
 
                             OutlinedButton(
@@ -230,10 +228,11 @@ fun VotingResultsScreen(
                                 modifier =
                                     Modifier
                                         .weight(1f)
-                                        .height(56.dp),
+                                        .height(Dimens.ButtonHeight)
+                                        .testTag(ImpstrTestTags.EndGame),
                                 shape = MaterialTheme.shapes.medium,
                             ) {
-                                Text("End Game", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.end_game), fontWeight = FontWeight.Bold)
                             }
                         }
                     } else {
@@ -246,10 +245,11 @@ fun VotingResultsScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp),
+                                    .height(Dimens.ButtonHeight)
+                                    .testTag(ImpstrTestTags.SeeResults),
                             shape = MaterialTheme.shapes.medium,
                         ) {
-                            Text("See Game Results", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.see_game_results), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -261,14 +261,14 @@ fun VotingResultsScreen(
 @Composable
 fun EliminatedPlayerCard(player: PlayerState) {
     val isImposter = player.isImposter
-    val backgroundColor = if (isImposter) com.knownassurajit.app.game.impstr.ui.theme.GameColors.CrewmateGreen else MaterialTheme.colorScheme.errorContainer
+    val backgroundColor = if (isImposter) GameColors.CrewmateGreen else MaterialTheme.colorScheme.errorContainer
     val contentColor = if (isImposter) Color.White else MaterialTheme.colorScheme.onErrorContainer
 
     ElevatedCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(100.dp),
+                .height(Dimens.TouchTargetMin * 2),
         shape = MaterialTheme.shapes.large,
         colors =
             CardDefaults.elevatedCardColors(
@@ -279,7 +279,7 @@ fun EliminatedPlayerCard(player: PlayerState) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(Dimens.CardPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
@@ -294,7 +294,7 @@ fun EliminatedPlayerCard(player: PlayerState) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = if (isImposter) "Imposter identified" else "Was not an Imposter",
+                    text = if (isImposter) stringResource(R.string.imposter_identified) else stringResource(R.string.was_not_imposter),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = contentColor.copy(alpha = 0.9f),
