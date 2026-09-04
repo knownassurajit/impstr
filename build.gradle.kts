@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.parcelize)
@@ -9,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.knownassurajit.app.game.impstr"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.knownassurajit.app.game.impstr"
         minSdk = 31
-        targetSdk = 36
+        targetSdk = 37
 
         val major = 1
         val minor = 1

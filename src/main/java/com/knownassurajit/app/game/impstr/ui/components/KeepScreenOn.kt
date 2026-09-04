@@ -19,7 +19,7 @@ import kotlinx.coroutines.delay
 fun KeepScreenOn(idleTimeoutMs: Long = 180_000L) {
     val context = LocalContext.current
     val activity = context.findActivity()
-    val interactionTime = runCatching { LocalInteractionTime.current }.getOrNull()
+    val interactionTime = LocalInteractionTime.current
 
     DisposableEffect(activity) {
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
