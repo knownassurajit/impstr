@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import com.knownassurajit.app.game.impstr.R
 import com.knownassurajit.app.game.impstr.data.CatalogStatus
@@ -60,7 +61,13 @@ fun LocationAssistChip(
     AssistChip(
         onClick = onClick,
         modifier = modifier,
-        label = { Text(label, maxLines = 1) },
+        label = {
+            Text(
+                label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         leadingIcon = {
             Icon(
                 imageVector = if (state.usingLocalWords) Icons.Rounded.Place else Icons.Rounded.Public,

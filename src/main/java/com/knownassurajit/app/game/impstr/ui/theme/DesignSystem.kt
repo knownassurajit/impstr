@@ -48,7 +48,7 @@ object Dimens {
     val AvatarLarge: Dp = 72.dp
     val AvatarMedium: Dp = 48.dp
     val AvatarSmall: Dp = 40.dp
-    val InfoCardHeight: Dp = 112.dp
+    val InfoCardHeight: Dp = 128.dp
     val VoteCardHeight: Dp = 180.dp
     val RevealHeroHeight: Dp = 140.dp
     val ProgressHeight: Dp = 8.dp

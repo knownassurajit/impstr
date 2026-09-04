@@ -85,3 +85,8 @@ build_output.txt
 !.github/
 !src/
 !gradle/
+
+# ECC / Cursor local logs
+.cursor/*.log
+.cursor/ecc-install-state.json
+.ecc/

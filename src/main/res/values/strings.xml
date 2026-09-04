@@ -13,6 +13,7 @@
     <string name="category_suggested">Suggested for you</string>
     <string name="category_all">All categories</string>
     <string name="random_words_hint">Everyday words, tuned to your region</string>
+    <string name="random_words_hint_short">Tuned to your region</string>
     <string name="catalog_updating">Updating word list…</string>
     <string name="start_game">Start Game</string>
     <string name="mode_stealth">Stealth</string>

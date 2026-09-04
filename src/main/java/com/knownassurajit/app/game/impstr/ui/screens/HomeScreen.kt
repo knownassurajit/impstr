@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import com.knownassurajit.app.game.impstr.R
 import com.knownassurajit.app.game.impstr.data.CatalogSnapshot
 import com.knownassurajit.app.game.impstr.data.PlayerNameSanitizer
@@ -198,11 +199,15 @@ private fun HomeScreenContent(
             Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpacingXs),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max)
+                        .padding(horizontal = Dimens.SpacingXs),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLg),
             ) {
                 InfoCard(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     icon = Icons.Rounded.Person,
@@ -212,7 +217,7 @@ private fun HomeScreenContent(
                     onClick = { showPlayerConfig = true },
                 )
                 InfoCard(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     icon = Icons.Rounded.Category,
@@ -220,7 +225,7 @@ private fun HomeScreenContent(
                     value = uiState.category,
                     subLabel =
                         when (uiState.category) {
-                            CatalogSnapshot.RANDOM_CATEGORY -> stringResource(R.string.random_words_hint)
+                            CatalogSnapshot.RANDOM_CATEGORY -> stringResource(R.string.random_words_hint_short)
                             CatalogSnapshot.LOCAL_CATEGORY -> personalization.regionLabel.orEmpty()
                             else -> ""
                         },
@@ -601,8 +606,26 @@ private fun CategoryRow(
     onCategorySelected: (String) -> Unit,
 ) {
     ListItem(
-        headlineContent = { Text(category, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal) },
-        supportingContent = supporting?.let { { Text(it) } },
+        headlineContent = {
+            Text(
+                category,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent =
+            supporting?.let {
+                {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            },
         leadingContent = {
             RadioButton(
                 selected = selected,
@@ -728,7 +751,10 @@ fun InfoCard(
     )
     ElevatedCard(
         onClick = onClick,
-        modifier = modifier.height(Dimens.InfoCardHeight).scale(scale),
+        modifier =
+            modifier
+                .heightIn(min = Dimens.InfoCardHeight)
+                .scale(scale),
         shape = MaterialTheme.shapes.large,
         interactionSource = interactionSource,
         colors =
@@ -745,13 +771,13 @@ fun InfoCard(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(Dimens.SpacingLg),
+                    .padding(Dimens.CardPadding),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = label.uppercase(),
@@ -759,6 +785,9 @@ fun InfoCard(
                     color = contentColor.copy(alpha = Alpha.Medium),
                     fontWeight = FontWeight.Bold,
                     letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).padding(end = Dimens.SpacingXs),
                 )
                 Icon(
                     icon,
@@ -767,20 +796,22 @@ fun InfoCard(
                     modifier = Modifier.size(Dimens.IconSizeSm),
                 )
             }
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs)) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (subLabel.isNotEmpty()) {
                     Text(
                         text = subLabel,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = contentColor.copy(alpha = Alpha.Medium),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

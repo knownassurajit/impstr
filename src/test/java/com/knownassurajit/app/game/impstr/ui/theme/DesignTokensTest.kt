@@ -30,6 +30,7 @@ class DesignTokensTest {
                 Dimens.SideSheetWidth,
                 Dimens.TouchTargetMin,
                 Dimens.ButtonHeight,
+                Dimens.InfoCardHeight,
                 Dimens.BottomBarPadding,
                 Dimens.IconSize,
             )
