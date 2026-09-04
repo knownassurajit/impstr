@@ -98,10 +98,12 @@ graph TD;
 
 ## 🎨 Design System
 
-IMPSTR uses a centralized **Token-based Design System** (`DesignSystem.kt`) to ensure visual excellence:
-- **Consistent Geometry**: All buttons use MD3 `medium` shapes (16dp), and bottom bars use specific 28dp top anchors.
-- **Expressive Motion**: Spring physics (`DampingRatioMediumBouncy`) power every interaction.
-- **Semantic Colors**: Custom color tokens (`ImposterRed`, `CrewmateGreen`) ensure tactical clarity.
+IMPSTR uses a centralized **token-based Material 3** system (`DesignSystem.kt`, `Color.kt`, `Type.kt`, `Shapes.kt`):
+- **Type**: Material 3 type scale set in **Poppins** (the only valid bundled TrueType family).
+- **Spacing**: 4dp grid / 8dp rhythm. Compact page margins 16dp, sheets 24dp, 48dp minimum touch targets, 56dp primary CTAs.
+- **Color**: Independent light and dark tonal palettes from a cyan-blue seed, plus a stealth neon scheme. Dynamic color (Material You) on Android 12+.
+- **Shape**: Expressive corners (16/20/28dp) on cards, buttons, and sheets.
+- **Motion**: Emphasized easing and spatial springs on lobby cards, splash, and navigation.
 
 > [!NOTE]
 > For a deep dive into the UX philosophy, see our [Design Overview](Resources/DESIGN.md).
@@ -147,15 +149,19 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 🏗️ Build & Testing
 
-We maintain a robust testing suite for win conditions and stealth logic.
+We maintain a robust testing suite for win conditions, stealth logic, design tokens, and device UI flows.
 ```bash
 ./gradlew testDebugUnitTest
+./gradlew connectedDebugAndroidTest
 ```
 
-**Unit Test Highlights:**
+**Test Highlights:**
 | Test Class | Coverage |
 |------------|----------|
-| `GameViewModelTest` | Boundaries, role assignment, win evaluation, and **Stealth Mode** word pairs. |
+| `GameViewModelTest` | Boundaries, role assignment, win evaluation, full setup→result lifecycle, and **Stealth Mode** word pairs. |
+| `DesignTokensTest` | 4dp spacing grid, 48dp touch targets, M3 type scale, light/dark contrast. |
+| `GameFlowComposeTest` | JVM Compose lobby → reveal → discussion → vote (Robolectric). |
+| `GameFlowE2ETest` | Instrumented lobby → reveal → discussion → vote → results, plus branded color/type checks. |
 
 ---
 

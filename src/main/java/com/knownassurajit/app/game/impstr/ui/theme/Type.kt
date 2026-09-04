@@ -8,25 +8,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.knownassurajit.app.game.impstr.R
 
-// Expressive Fonts (Mimicking Google Sans)
-// Poppins for Headlines (Geometric, Friendly)
+/**
+ * IMPSTR type scale — Material 3 sizes/line-heights/tracking with Poppins.
+ * Poppins is the only bundled TrueType family (Inter/Roboto assets were invalid HTML).
+ */
 val DisplayFont =
     FontFamily(
         Font(R.font.poppins_regular, FontWeight.Normal),
+        Font(R.font.poppins_medium, FontWeight.Medium),
         Font(R.font.poppins_semibold, FontWeight.SemiBold),
+        Font(R.font.poppins_bold, FontWeight.Bold),
     )
 
-// Inter for Body (Clean, Readable)
-// REPLACED: Inter and Roboto font files caused crashes. Using Poppins for consistency and stability.
 val BodyFont = DisplayFont
 
-// Roboto for "IMPSTR" Logo specifically
-// REPLACED: Roboto font files caused crashes. Using Poppins.
 val LogoFont = DisplayFont
 
 val Typography =
     Typography(
-        // Display styles - Large, impactful text
         displayLarge =
             TextStyle(
                 fontFamily = DisplayFont,
@@ -51,7 +50,6 @@ val Typography =
                 lineHeight = 44.sp,
                 letterSpacing = 0.sp,
             ),
-        // Headline styles - Section headers
         headlineLarge =
             TextStyle(
                 fontFamily = DisplayFont,
@@ -76,7 +74,6 @@ val Typography =
                 lineHeight = 32.sp,
                 letterSpacing = 0.sp,
             ),
-        // Title styles - Emphasized text
         titleLarge =
             TextStyle(
                 fontFamily = BodyFont,
@@ -101,7 +98,6 @@ val Typography =
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
             ),
-        // Body styles - Main content text
         bodyLarge =
             TextStyle(
                 fontFamily = BodyFont,
@@ -126,7 +122,6 @@ val Typography =
                 lineHeight = 16.sp,
                 letterSpacing = 0.4.sp,
             ),
-        // Label styles - UI labels and buttons
         labelLarge =
             TextStyle(
                 fontFamily = BodyFont,

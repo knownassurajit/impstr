@@ -1,13 +1,16 @@
 package com.knownassurajit.app.game.impstr.ui.screens
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.*
@@ -17,22 +20,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.knownassurajit.app.game.impstr.data.WordRepository
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.data.CatalogSnapshot
+import com.knownassurajit.app.game.impstr.data.PlayerNameSanitizer
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
 import com.knownassurajit.app.game.impstr.ui.components.ImpstrLogo
+import com.knownassurajit.app.game.impstr.ui.components.ImpstrPrimaryButton
+import com.knownassurajit.app.game.impstr.ui.components.LocationPersonalizationHost
 import com.knownassurajit.app.game.impstr.ui.components.SplitButton
 import com.knownassurajit.app.game.impstr.ui.theme.*
-import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 import com.knownassurajit.app.game.impstr.ui.viewmodel.GameViewModel
+import com.knownassurajit.app.game.impstr.ui.viewmodel.PersonalizationViewModel
 import kotlinx.coroutines.launch
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorderAfterLongPress
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 data class LobbyPlayer(
     val id: String,
@@ -48,6 +55,23 @@ data class LobbyPlayer(
 fun HomeScreen(
     viewModel: GameViewModel,
     onStartGame: () -> Unit,
+    personalizationViewModel: PersonalizationViewModel? = null,
+) {
+    if (personalizationViewModel == null) {
+        HomeScreenContent(viewModel, onStartGame, com.knownassurajit.app.game.impstr.data.PersonalizationState(), null)
+    } else {
+        val personalization = personalizationViewModel.uiState.collectAsStateWithLifecycle().value
+        HomeScreenContent(viewModel, onStartGame, personalization, personalizationViewModel)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeScreenContent(
+    viewModel: GameViewModel,
+    onStartGame: () -> Unit,
+    personalization: com.knownassurajit.app.game.impstr.data.PersonalizationState,
+    personalizationViewModel: PersonalizationViewModel?,
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
     var showPlayerConfig by remember { mutableStateOf(false) }
@@ -88,6 +112,9 @@ fun HomeScreen(
     if (showCategoryDialog) {
         CategoryBottomSheet(
             currentCategory = uiState.category,
+            categories = personalization.allCategories,
+            suggested = personalization.suggestedCategories,
+            regionLabel = personalization.regionLabel,
             onDismiss = { showCategoryDialog = false },
             onCategorySelected = { category ->
                 viewModel.updateCategory(category)
@@ -124,7 +151,7 @@ fun HomeScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp),
+                        .padding(top = Dimens.SpacingLg, bottom = Dimens.SpacingSm),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -134,9 +161,9 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
                 ) {
                     Text(
-                        text = if (uiState.isStealthMode) "Stealth" else "Normal",
+                        text = stringResource(if (uiState.isStealthMode) R.string.mode_stealth else R.string.mode_normal),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (uiState.isStealthMode) StealthLime else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (uiState.isStealthMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Switch(
@@ -161,7 +188,14 @@ fun HomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            if (personalizationViewModel != null) {
+                LocationPersonalizationHost(
+                    state = personalization,
+                    viewModel = personalizationViewModel,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpacingXs),
@@ -169,20 +203,27 @@ fun HomeScreen(
             ) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    color = if (uiState.isStealthMode) StealthPurple else CardYellow,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     icon = Icons.Rounded.Person,
-                    label = "Players",
+                    label = stringResource(R.string.label_players),
                     value = "${uiState.imposterCount}/${players.size}",
-                    subLabel = "Imposters",
+                    subLabel = stringResource(R.string.label_imposters),
                     onClick = { showPlayerConfig = true },
                 )
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    color = if (uiState.isStealthMode) StealthLime else CardTeal,
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     icon = Icons.Rounded.Category,
-                    label = "Category",
+                    label = stringResource(R.string.label_category),
                     value = uiState.category,
-                    subLabel = "",
+                    subLabel =
+                        when (uiState.category) {
+                            CatalogSnapshot.RANDOM_CATEGORY -> stringResource(R.string.random_words_hint)
+                            CatalogSnapshot.LOCAL_CATEGORY -> personalization.regionLabel.orEmpty()
+                            else -> ""
+                        },
                     onClick = { showCategoryDialog = true },
                 )
             }
@@ -197,60 +238,64 @@ fun HomeScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Players",
+                        text = stringResource(R.string.label_players),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     IconButton(onClick = { viewModel.shuffleLobbyPlayers() }) {
                         Icon(
                             androidx.compose.material.icons.Icons.Rounded.Shuffle,
-                            contentDescription = "Shuffle Players",
+                            contentDescription = stringResource(R.string.action_shuffle_players),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
-                TextButton(onClick = {
+                TextButton(
+                    onClick = {
                     viewModel.updatePlayerCount(players.size + 1)
-                }) {
+                },
+                    enabled = players.size < PlayerNameSanitizer.MaxPlayers,
+                ) {
                     Icon(
                         Icons.Rounded.Add,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSizeSm),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add")
+                    Spacer(modifier = Modifier.width(Dimens.SpacingXs))
+                    Text(stringResource(R.string.action_add))
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingMd))
 
             // Players List (Reorderable)
-            val state =
-                rememberReorderableLazyListState(onMove = { from, to ->
-                    viewModel.reorderPlayers(from.index, to.index)
-                })
-
+            val lazyListState = rememberLazyListState()
+            val reorderableLazyListState =
+                rememberReorderableLazyListState(lazyListState) { from, to ->
+                    val fromIndex = from.index
+                    val toIndex = to.index
+                    if (fromIndex in players.indices && toIndex in players.indices) {
+                        viewModel.reorderPlayers(fromIndex, toIndex)
+                    }
+                }
             LazyColumn(
-                state = state.listState,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .reorderable(state),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                state = lazyListState,
+                modifier = Modifier.weight(1f).testTag(ImpstrTestTags.LobbyPlayers),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
             ) {
                 items(players, key = { it.id }) { player ->
                     ReorderableItem(
-                        reorderableState = state,
+                        reorderableLazyListState,
                         key = player.id,
                     ) { isDragging ->
-                        val elevation = animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                        val elevation = animateDpAsState(if (isDragging) Dimens.ElevationMax else Dimens.ElevationNone, label = "playerDrag")
                         val index = players.indexOfFirst { it.id == player.id }
 
                         Box(
                             modifier =
                                 Modifier
-                                    .detectReorderAfterLongPress(state)
-                                    .shadow(elevation.value, RoundedCornerShape(16.dp)),
+                                    .longPressDraggableHandle()
+                                    .shadow(elevation.value, MaterialTheme.shapes.medium),
                         ) {
                             // Use SplitButton for Player Item
                             SplitButton(
@@ -260,7 +305,7 @@ fun HomeScreen(
                                     Box(
                                         modifier =
                                             Modifier
-                                                .size(40.dp)
+                                                .size(Dimens.AvatarSmall)
                                                 .clip(CircleShape)
                                                 .background(player.avatarColor),
                                         contentAlignment = Alignment.Center,
@@ -268,10 +313,10 @@ fun HomeScreen(
                                         Text(
                                             text = player.name.firstOrNull()?.toString()?.uppercase() ?: "?",
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.Black.copy(alpha = 0.7f),
+                                            color = GameColors.OnVibrant,
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Spacer(modifier = Modifier.width(Dimens.SpacingLg))
                                     Column(
                                         modifier = Modifier.weight(1f),
                                         verticalArrangement = Arrangement.Center
@@ -285,14 +330,14 @@ fun HomeScreen(
                                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                             )
                                             if (player.isHost) {
-                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                                                 Surface(
                                                     color = MaterialTheme.colorScheme.primaryContainer,
-                                                    shape = RoundedCornerShape(4.dp),
+                                                    shape = Corners.Badge,
                                                 ) {
                                                     Text(
-                                                        "HOST",
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                                        stringResource(R.string.host_badge),
+                                                        modifier = Modifier.padding(horizontal = Dimens.SpacingXs, vertical = Dimens.OpticalInset),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                     )
@@ -311,7 +356,7 @@ fun HomeScreen(
 
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpacingXs),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -321,46 +366,26 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 Icons.Rounded.Remove,
-                                contentDescription = "Remove Player",
-                                modifier = Modifier.size(18.dp),
+                                contentDescription = stringResource(R.string.cd_remove_player),
+                                modifier = Modifier.size(Dimens.IconSizeSm),
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Remove")
+                            Spacer(modifier = Modifier.width(Dimens.SpacingXs))
+                            Text(stringResource(R.string.action_remove))
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
-            // Start Game Button
-            FilledTonalButton(
+            ImpstrPrimaryButton(
+                text = stringResource(R.string.start_game),
                 onClick = onStartGame,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(Dimens.ButtonHeight),
-                shape = MaterialTheme.shapes.medium,
-                colors =
-                    ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-            ) {
-                Text(
-                    text = "Start Game",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+                modifier = Modifier.testTag(ImpstrTestTags.StartGame),
+                icon = Icons.AutoMirrored.Rounded.ArrowForward,
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
         }
     }
 }
@@ -379,40 +404,39 @@ fun PlayerConfigBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        scrimColor = Color.Black.copy(alpha = 0.8f), // Slight opacity difference
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = Alpha.Scrim + 0.18f),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = Dimens.SheetPadding, vertical = Dimens.SpacingLg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Configure Players",
+                stringResource(R.string.configure_players),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
-            // Player Count
             Text(
-                "Number of Players",
+                stringResource(R.string.number_of_players),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingXl),
             ) {
                 IconButton(
                     onClick = { if (currentCount > 3) onUpdateCount(currentCount - 1) },
                     enabled = currentCount > 3,
                 ) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease")
+                    Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.cd_decrease))
                 }
 
                 Text(
@@ -422,30 +446,30 @@ fun PlayerConfigBottomSheet(
                 )
 
                 IconButton(
-                    onClick = { onUpdateCount(currentCount + 1) },
+                    onClick = { if (currentCount < PlayerNameSanitizer.MaxPlayers) onUpdateCount(currentCount + 1) },
+                    enabled = currentCount < PlayerNameSanitizer.MaxPlayers,
                 ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Increase")
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.cd_increase))
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
-            // Imposter Count
             Text(
-                "Number of Imposters",
+                stringResource(R.string.number_of_imposters),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingXl),
             ) {
                 IconButton(
                     onClick = { if (currentImposterCount > 1) onUpdateImposterCount(currentImposterCount - 1) },
                     enabled = currentImposterCount > 1,
                 ) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Imposters")
+                    Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.cd_decrease_imposters))
                 }
 
                 Text(
@@ -458,11 +482,11 @@ fun PlayerConfigBottomSheet(
                     onClick = { if (currentImposterCount < currentCount - 1) onUpdateImposterCount(currentImposterCount + 1) },
                     enabled = currentImposterCount < currentCount - 1,
                 ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Increase Imposters")
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.cd_increase_imposters))
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
             FilledTonalButton(
                 onClick = {
@@ -474,12 +498,12 @@ fun PlayerConfigBottomSheet(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(Dimens.TouchTargetMin),
             ) {
-                Text("Done")
+                Text(stringResource(R.string.action_done))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
         }
     }
 }
@@ -487,67 +511,122 @@ fun PlayerConfigBottomSheet(
 @Composable
 fun CategoryBottomSheet(
     currentCategory: String,
+    categories: List<String>,
+    suggested: List<String>,
+    regionLabel: String?,
     onDismiss: () -> Unit,
     onCategorySelected: (String) -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
-    val categories = WordRepository.categories.keys.toList()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val suggestedSet = suggested.toSet()
+    val remaining = categories.filter { it !in suggestedSet }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         LazyColumn(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+                    .padding(horizontal = Dimens.SheetPadding),
+            contentPadding = PaddingValues(vertical = Dimens.SpacingLg),
         ) {
             item {
                 Text(
-                    "Select Category",
+                    stringResource(R.string.select_category),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp),
+                    modifier = Modifier.padding(bottom = Dimens.SpacingSm),
+                )
+                if (regionLabel != null) {
+                    Text(
+                        stringResource(R.string.category_suggested) + " · $regionLabel",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = Dimens.SpacingMd),
+                    )
+                }
+            }
+
+            if (suggested.isNotEmpty()) {
+                items(suggested.filter { it in categories.toSet() || it == currentCategory }.distinct()) { category ->
+                    CategoryRow(
+                        category = category,
+                        selected = category == currentCategory,
+                        supporting =
+                            if (category == CatalogSnapshot.RANDOM_CATEGORY) {
+                                stringResource(R.string.random_words_hint)
+                            } else {
+                                null
+                            },
+                        onCategorySelected = onCategorySelected,
+                    )
+                }
+                item {
+                    Text(
+                        stringResource(R.string.category_all),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = Dimens.SpacingLg, bottom = Dimens.SpacingSm),
+                    )
+                }
+            }
+
+            items(remaining) { category ->
+                CategoryRow(
+                    category = category,
+                    selected = category == currentCategory,
+                    supporting =
+                        if (category == CatalogSnapshot.RANDOM_CATEGORY) {
+                            stringResource(R.string.random_words_hint)
+                        } else {
+                            null
+                        },
+                    onCategorySelected = onCategorySelected,
                 )
             }
 
-            items(categories) { category ->
-                ListItem(
-                    headlineContent = { Text(category) },
-                    leadingContent = {
-                        RadioButton(
-                            selected = category == currentCategory,
-                            onClick = { onCategorySelected(category) },
-                            colors =
-                                RadioButtonDefaults.colors(
-                                    selectedColor = MaterialTheme.colorScheme.primary,
-                                ),
-                        )
-                    },
-                    modifier =
-                        Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onCategorySelected(category) },
-                    colors =
-                        ListItemDefaults.colors(
-                            containerColor =
-                                if (category == currentCategory) {
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                } else {
-                                    Color.Transparent
-                                },
-                        ),
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            item { Spacer(modifier = Modifier.height(Dimens.SpacingLg)) }
         }
     }
+}
+
+@Composable
+private fun CategoryRow(
+    category: String,
+    selected: Boolean,
+    supporting: String?,
+    onCategorySelected: (String) -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(category, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal) },
+        supportingContent = supporting?.let { { Text(it) } },
+        leadingContent = {
+            RadioButton(
+                selected = selected,
+                onClick = { onCategorySelected(category) },
+                colors =
+                    RadioButtonDefaults.colors(
+                        selectedColor = MaterialTheme.colorScheme.primary,
+                    ),
+            )
+        },
+        modifier =
+            Modifier
+                .clip(MaterialTheme.shapes.medium)
+                .clickable { onCategorySelected(category) },
+        colors =
+            ListItemDefaults.colors(
+                containerColor =
+                    if (selected) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                    } else {
+                        Color.Transparent
+                    },
+            ),
+    )
 }
 
 @Composable
@@ -569,29 +648,29 @@ fun RenamePlayerBottomSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = Dimens.SheetPadding, vertical = Dimens.SpacingLg),
         ) {
             Text(
-                "Rename Player",
+                stringResource(R.string.rename_player),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
-                label = { Text("Player Name") },
+                onValueChange = { name = it.take(PlayerNameSanitizer.MaxLength) },
+                label = { Text(stringResource(R.string.player_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
             ) {
                 OutlinedButton(
                     onClick = {
@@ -603,9 +682,9 @@ fun RenamePlayerBottomSheet(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(Dimens.TouchTargetMin),
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
 
                 FilledTonalButton(
@@ -618,13 +697,13 @@ fun RenamePlayerBottomSheet(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(Dimens.TouchTargetMin),
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
         }
     }
 }
@@ -633,23 +712,33 @@ fun RenamePlayerBottomSheet(
 fun InfoCard(
     modifier: Modifier = Modifier,
     color: Color,
+    contentColor: Color,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
     subLabel: String,
     onClick: () -> Unit = {},
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = Motion.SpatialSpring,
+        label = "infoCardPress",
+    )
     ElevatedCard(
         onClick = onClick,
-        modifier = modifier.height(112.dp),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.height(Dimens.InfoCardHeight).scale(scale),
+        shape = MaterialTheme.shapes.large,
+        interactionSource = interactionSource,
         colors =
             CardDefaults.elevatedCardColors(
                 containerColor = color,
+                contentColor = contentColor,
             ),
         elevation =
             CardDefaults.elevatedCardElevation(
-                defaultElevation = 2.dp,
+                defaultElevation = Dimens.ElevationBase,
             ),
     ) {
         Column(
@@ -667,15 +756,15 @@ fun InfoCard(
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = contentColor.copy(alpha = Alpha.Medium),
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
+                    letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing,
                 )
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = Color.Black.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp),
+                    tint = contentColor.copy(alpha = Alpha.High),
+                    modifier = Modifier.size(Dimens.IconSizeSm),
                 )
             }
             Column {
@@ -683,7 +772,7 @@ fun InfoCard(
                     text = value,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = contentColor,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
@@ -691,7 +780,7 @@ fun InfoCard(
                     Text(
                         text = subLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black.copy(alpha = 0.5f),
+                        color = contentColor.copy(alpha = Alpha.Medium),
                     )
                 }
             }
@@ -719,14 +808,14 @@ fun PlayerListItem(
             ),
         elevation =
             CardDefaults.elevatedCardElevation(
-                defaultElevation = if (player.isHost) 4.dp else 1.dp,
+                defaultElevation = if (player.isHost) Dimens.ElevationSlight else Dimens.ElevationBase,
             ),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(Dimens.CardPaddingTight),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -739,7 +828,7 @@ fun PlayerListItem(
                     Box(
                         modifier =
                             Modifier
-                                .size(48.dp)
+                                .size(Dimens.AvatarMedium)
                                 .clip(CircleShape)
                                 .background(player.avatarColor.copy(alpha = 0.4f)),
                         contentAlignment = Alignment.Center,
@@ -748,32 +837,30 @@ fun PlayerListItem(
                             text = player.name.firstOrNull()?.uppercase() ?: "?",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black.copy(alpha = 0.8f),
+                            color = GameColors.OnVibrant,
                         )
                     }
-                    // Host Badge
                     if (player.isHost) {
                         Surface(
                             modifier =
                                 Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(end = 2.dp),
-                            shape = RoundedCornerShape(4.dp),
-                            color = CardYellow,
-                            tonalElevation = 2.dp,
+                                    .padding(end = Dimens.OpticalInset),
+                            shape = Corners.Badge,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            tonalElevation = Dimens.ElevationBase,
                         ) {
                             Text(
-                                "HOST",
+                                stringResource(R.string.host_badge),
                                 style = MaterialTheme.typography.labelSmall,
-                                fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = Dimens.SpacingXs, vertical = Dimens.OpticalInset),
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(Dimens.SpacingMd))
                 Column {
                     Text(
                         text = player.name,
@@ -784,7 +871,7 @@ fun PlayerListItem(
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "Hold to move",
+                        text = stringResource(R.string.hold_to_move),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -795,7 +882,7 @@ fun PlayerListItem(
             IconButton(onClick = onEditClick) {
                 Icon(
                     Icons.Rounded.Edit,
-                    contentDescription = "Edit Name",
+                    contentDescription = stringResource(R.string.cd_edit_name),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

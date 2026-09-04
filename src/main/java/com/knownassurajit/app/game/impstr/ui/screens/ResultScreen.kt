@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,14 +34,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import com.knownassurajit.app.game.impstr.R
+import com.knownassurajit.app.game.impstr.ui.ImpstrTestTags
+import com.knownassurajit.app.game.impstr.ui.components.ImpstrPrimaryButton
 import com.knownassurajit.app.game.impstr.ui.theme.Corners
 import com.knownassurajit.app.game.impstr.ui.theme.Dimens
 import com.knownassurajit.app.game.impstr.ui.theme.GameColors
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 @Composable
@@ -56,7 +57,7 @@ fun ResultScreen(
     val winner = uiState.winner
     val isCrewmatesWin = winner == "Crewmates"
 
-    val cardColor = if (isCrewmatesWin) Color(0xFF22c55e) else Color(0xFFef4444)
+    val cardColor = if (isCrewmatesWin) GameColors.CrewmateGreen else GameColors.ImposterRed
     val bgGradient =
         if (isCrewmatesWin) {
             Brush.verticalGradient(
@@ -149,11 +150,11 @@ fun ResultScreen(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.SpacingLg, vertical = Dimens.SpacingSm),
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXxl))
 
                 // Result Card
                 Card(
@@ -168,21 +169,21 @@ fun ResultScreen(
                         ),
                     elevation =
                         CardDefaults.cardElevation(
-                            defaultElevation = 8.dp,
+                            defaultElevation = Dimens.ElevationMax,
                         ),
                 ) {
                     Column(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(32.dp),
+                                .padding(Dimens.SpacingXxl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         // Icon
                         Box(
                             modifier =
                                 Modifier
-                                    .size(96.dp)
+                                    .size(Dimens.AvatarLarge)
                                     .clip(CircleShape)
                                     .background(cardColor.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center,
@@ -190,21 +191,20 @@ fun ResultScreen(
                             Text(
                                 text = "😈",
                                 style = MaterialTheme.typography.displayLarge,
-                                fontSize = 56.sp,
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
                         Text(
-                            text = if (imposters.size > 1) "The Imposters were" else "The Imposter was",
+                            text = if (imposters.size > 1) stringResource(R.string.the_imposters_were) else stringResource(R.string.the_imposter_was),
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingLg))
 
                         imposters.forEach { imposter ->
                             Text(
@@ -215,13 +215,13 @@ fun ResultScreen(
                                 textAlign = TextAlign.Center,
                             )
                             if (imposters.indexOf(imposter) != imposters.lastIndex) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(Dimens.SpacingSm))
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
                         // Winner Badge
                         Surface(
@@ -229,15 +229,15 @@ fun ResultScreen(
                             color = cardColor.copy(alpha = 0.15f),
                         ) {
                             Text(
-                                text = if (isCrewmatesWin) "🎉 Crewmates Win!" else "😈 Imposter Wins!",
+                                text = if (isCrewmatesWin) stringResource(R.string.crewmates_win) else stringResource(R.string.imposter_wins),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = cardColor,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                                modifier = Modifier.padding(horizontal = Dimens.SpacingXl, vertical = Dimens.SpacingMd),
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
                         // ALWAYS Show Secret Word & Category
                         Surface(
@@ -246,15 +246,15 @@ fun ResultScreen(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Column(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(Dimens.CardPadding),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Text(
-                                    text = "THE SECRET WORD WAS",
+                                    text = stringResource(R.string.secret_word_was),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(Dimens.SpacingXs))
                                 Text(
                                     text = uiState.secretWord,
                                     style = MaterialTheme.typography.headlineSmall,
@@ -264,9 +264,9 @@ fun ResultScreen(
 
                                 // In stealth mode, also reveal the imposter's decoy word
                                 if (uiState.isStealthMode && uiState.imposterWord.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(Dimens.SpacingMd))
                                     Text(
-                                        text = "IMPOSTER'S WORD WAS",
+                                        text = stringResource(R.string.imposter_word_was),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = GameColors.ImposterRedDim,
                                     )
@@ -279,9 +279,9 @@ fun ResultScreen(
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(Dimens.SpacingSm))
                                 Text(
-                                    text = "Category: ${uiState.category}",
+                                    text = stringResource(R.string.category_prefix, uiState.category),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -291,7 +291,7 @@ fun ResultScreen(
                 }
 
                 if (uiState.eliminationHistory.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(Dimens.SpacingXl))
 
                     // Separate Card for Elimination History
                     Card(
@@ -301,33 +301,33 @@ fun ResultScreen(
                                 .scale(scale),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationSlight),
                     ) {
                         Column(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(24.dp),
+                                    .padding(Dimens.SpacingXl),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                text = "Elimination History",
+                                text = stringResource(R.string.elimination_history),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(Dimens.SpacingLg))
                             uiState.eliminationHistory.forEach { record ->
                                 Surface(
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                                 shape = MaterialTheme.shapes.small,
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpacingXs),
                                 ) {
                                     Text(
                                         text = "${record.eliminationOrder}. ${record.player.name} (Round ${record.roundNumber})",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(12.dp),
+                                        modifier = Modifier.padding(Dimens.CardPaddingTight),
                                         textAlign = TextAlign.Center,
                                     )
                                 }
@@ -346,26 +346,14 @@ fun ResultScreen(
                     tonalElevation = Dimens.ElevationHigh,
                     shape = Corners.BottomBar,
                 ) {
-                    FilledTonalButton(
+                    ImpstrPrimaryButton(
+                        text = stringResource(R.string.play_again),
                         onClick = onPlayAgain,
                         modifier =
                             Modifier
-                                .fillMaxWidth()
                                 .padding(Dimens.BottomBarPadding)
-                                .height(Dimens.ButtonHeight),
-                        shape = MaterialTheme.shapes.medium,
-                        colors =
-                            androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                    ) {
-                        Text(
-                            "Play Again",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+                                .testTag(ImpstrTestTags.PlayAgain),
+                    )
                 }
             }
         }

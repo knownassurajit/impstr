@@ -24,8 +24,7 @@ local.properties
 # ── Android Specific ─────────────────────────────────────────
 *.apk
 *.aab
-release/
-debug/
+/release/
 output.json
 
 # ── Signing / Keystore ───────────────────────────────────────
