@@ -41,6 +41,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        with:
+          packages: platform-tools platforms;android-36 build-tools;35.0.0
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -49,6 +51,8 @@ jobs:
         run: |
           # Release identity is the root project (settings.gradle.kts does not include :app).
           grep -q 'applicationId = "com.knownassurajit.impstr_game.app"' build.gradle.kts
+          grep -q 'compileSdk = 36' build.gradle.kts
+          grep -q 'targetSdk = 36' build.gradle.kts
           grep -q 'packageName: com.knownassurajit.impstr_game.app' .github/workflows/ci-cd.yml
 
       - name: Run Unit Tests
@@ -238,6 +242,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        with:
+          packages: platform-tools platforms;android-36 build-tools;35.0.0
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -397,7 +403,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
         with:
-          packages: tools platform-tools platforms;android-37.0 build-tools;35.0.0
+          packages: platform-tools platforms;android-36 build-tools;35.0.0
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

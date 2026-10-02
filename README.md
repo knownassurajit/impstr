@@ -132,7 +132,7 @@ IMPSTR leverages a robust **Model-View-ViewModel (MVVM)** pattern with **Unidire
 ### Prerequisites
 - **Android Studio** Ladybug (or higher)
 - **JDK 17** integration
-- Minimum API Level 31 (Android 12) targeting API 36.
+- Minimum API Level 31 (Android 12). Release `compileSdk` and `targetSdk` are 36.
 
 ### Build via CLI
 ```bash
@@ -197,7 +197,7 @@ IMPSTR ships through a **develop → master** pipeline, driven by a single conta
 | `SIGNING_KEY`, `ALIAS`, `KEY_STORE_PASSWORD`, `KEY_PASSWORD` | Signing the release AAB and APK on `master` |
 | `PLAY_CONSOLE_JSON` | Publishing the signed AAB to the Google Play **internal** track for `com.knownassurajit.impstr_game.app`. Release names stay `impstr` (the GitHub repo). The workflow does not change the Play store listing title. If the secret is unset, Play upload is skipped and the GitHub release still publishes. |
 
-`master` is the production branch. Each master build sets `versionCode` to the Gradle formula plus `github.run_number`, so a later merge can upload without editing `build.gradle.kts`. Play rejects a version code that was already used.
+`master` is the production branch. Release `versionCode` starts at 1010001 (1.1.0.1), above the last shared 1.1.0.0 bundle, and each master build adds `github.run_number`. Play rejects a version code that was already used.
 
 Manual republish, without a second upload on every merge, is [`.github/workflows/play-release.yml`](.github/workflows/play-release.yml) (`workflow_dispatch` only).
 

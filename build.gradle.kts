@@ -12,7 +12,7 @@ val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orNull?.toIntOrNul
 
 android {
     namespace = "com.knownassurajit.app.game.impstr"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         // Play Console package. Namespace stays the Kotlin/R package.
@@ -23,7 +23,8 @@ android {
         val major = 1
         val minor = 1
         val patch = 0
-        val build = 0
+        // 1.1.0.0 (versionCode 1010000) was the last shared build. Play rejects a repeat.
+        val build = 1
 
         versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + build + ciBuildNumber
         versionName = "$major.$minor.$patch.${build + ciBuildNumber}"

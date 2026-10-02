@@ -14,6 +14,10 @@ class PlayReleaseIdentityTest {
             gradle.contains("applicationId = \"com.knownassurajit.impstr_game.app\""),
         )
         assertFalse(gradle.contains("applicationId = \"com.knownassurajit.app.game.impstr\""))
+        assertTrue(gradle.contains("compileSdk = 36"))
+        assertTrue(gradle.contains("targetSdk = 36"))
+        assertTrue(gradle.contains("val build = 1"))
+        assertFalse(gradle.contains("compileSdk = 37"))
     }
 
     private fun releaseGradleFile(): File {
