@@ -1,28 +1,33 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.compose)
 }
 
+// Master CI passes -PciBuildNumber=$GITHUB_RUN_NUMBER so each merge gets a
+// higher versionCode. Local builds leave this at 0.
+val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orNull?.toIntOrNull() ?: 0
+
 android {
     namespace = "com.knownassurajit.app.game.impstr"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.knownassurajit.app.game.impstr"
+        // Play Console package. Namespace stays the Kotlin/R package.
+        applicationId = "com.knownassurajit.impstr_game.app"
         minSdk = 31
         targetSdk = 36
 
         val major = 1
         val minor = 1
         val patch = 0
-        val build = 0
-        
-        versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + build
-        versionName = "$major.$minor.$patch.$build"
+        // 1.1.0.0 (versionCode 1010000) was the last shared build. Play rejects a repeat.
+        val build = 1
+
+        versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + build + ciBuildNumber
+        versionName = "$major.$minor.$patch.${build + ciBuildNumber}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
