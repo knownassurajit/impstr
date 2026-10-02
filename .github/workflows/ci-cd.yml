@@ -409,7 +409,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run Unit Tests
-        run: ./gradlew testReleaseUnitTest --no-daemon
+        # AGP only registers testDebugUnitTest. testReleaseUnitTest is not a task.
+        # The test job already ran this on the same commit; repeat it before signing.
+        run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Run Lint Analysis
         run: ./gradlew lintRelease --no-daemon

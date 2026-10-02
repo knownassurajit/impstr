@@ -180,7 +180,7 @@ IMPSTR ships through a **develop → master** pipeline, driven by a single conta
 | **`test`** | Every push to `develop`/`master`, and every pull request | Runs `testDebugUnitTest` + `lintDebug` inside an `eclipse-temurin:17-jdk-jammy` container and uploads the reports as a build artifact. This is the CI signal for **every** PR, including feature branches into `develop`. |
 | **`debug-release`** | Push to `develop` (after `test` passes) | Builds an **unsigned debug APK**, extracts the version from Gradle, generates a changelog since the last tag, and publishes it as a **GitHub pre-release** for internal testing. |
 | **`pr-summary`** | Pull requests targeting `master` | Re-runs lint + unit tests, then posts a detailed **`$GITHUB_STEP_SUMMARY`** and a PR comment with pass/fail status, current version, and a changelog preview of everything since the last stable release — so a `develop → master` PR is reviewable at a glance. |
-| **`stable-release`** | Push to `master` (after `test` passes) | Runs `testReleaseUnitTest` + `lintRelease`, builds `bundleRelease` and `assembleRelease` from the **root** Gradle project, **signs** the AAB and APK, publishes both on a **GitHub Stable Release** (`impstr-release-v<version>.aab` and `.apk`), and uploads the **signed AAB** to the **Google Play internal track**. |
+| **`stable-release`** | Push to `master` (after `test` passes) | Runs `testDebugUnitTest` + `lintRelease`, builds `bundleRelease` and `assembleRelease` from the **root** Gradle project, **signs** the AAB and APK, publishes both on a **GitHub Stable Release** (`impstr-release-v<version>.aab` and `.apk`), and uploads the **signed AAB** to the **Google Play internal track**. |
 
 ### Release artifacts
 
