@@ -17,7 +17,7 @@ class PlayReleaseIdentityTest {
     }
 
     private fun releaseGradleFile(): File {
-        var dir = File(System.getProperty("user.dir"))
+        var dir = File(System.getProperty("user.dir").orEmpty())
         repeat(6) {
             val candidate = File(dir, "build.gradle.kts")
             if (candidate.isFile && candidate.readText().contains("ciBuildNumber")) {
@@ -25,6 +25,7 @@ class PlayReleaseIdentityTest {
             }
             dir = dir.parentFile ?: error("build.gradle.kts not found")
         }
-        error("Release build.gradle.kts not found from ${System.getProperty("user.dir")}")
+        val start = System.getProperty("user.dir").orEmpty()
+        error("Release build.gradle.kts not found from $start")
     }
 }

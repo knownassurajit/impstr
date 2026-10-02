@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.parcelize)
@@ -13,7 +12,7 @@ val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orNull?.toIntOrNul
 
 android {
     namespace = "com.knownassurajit.app.game.impstr"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // Play Console package. Namespace stays the Kotlin/R package.
