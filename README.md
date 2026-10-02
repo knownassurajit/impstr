@@ -180,21 +180,26 @@ IMPSTR ships through a **develop → master** pipeline, driven by a single conta
 | **`test`** | Every push to `develop`/`master`, and every pull request | Runs `testDebugUnitTest` + `lintDebug` inside an `eclipse-temurin:17-jdk-jammy` container and uploads the reports as a build artifact. This is the CI signal for **every** PR, including feature branches into `develop`. |
 | **`debug-release`** | Push to `develop` (after `test` passes) | Builds an **unsigned debug APK**, extracts the version from Gradle, generates a changelog since the last tag, and publishes it as a **GitHub pre-release** for internal testing. |
 | **`pr-summary`** | Pull requests targeting `master` | Re-runs lint + unit tests, then posts a detailed **`$GITHUB_STEP_SUMMARY`** and a PR comment with pass/fail status, current version, and a changelog preview of everything since the last stable release — so a `develop → master` PR is reviewable at a glance. |
-| **`stable-release`** | Push to `master` (after `test` passes) | Runs `testReleaseUnitTest` + `lintRelease`, builds `assembleRelease`, **signs** the APK via [`r0adkll/sign-android-release`](https://github.com/r0adkll/sign-android-release), publishes it as a **GitHub Stable Release** (`impstr-release-v<version>.apk`), and — if Play Console credentials are configured — publishes it to the **Google Play internal testing track** via [`r0adkll/upload-google-play`](https://github.com/r0adkll/upload-google-play). |
+| **`stable-release`** | Push to `master` (after `test` passes) | Runs `testReleaseUnitTest` + `lintRelease`, builds `bundleRelease` and `assembleRelease` from the **root** Gradle project, **signs** the AAB and APK, publishes both on a **GitHub Stable Release** (`impstr-release-v<version>.aab` and `.apk`), and uploads the **signed AAB** to the **Google Play internal track**. |
 
 ### Release artifacts
 
 | Source | Naming | Type |
 |---|---|---|
 | `develop` pre-release | `impstr-debug-v<version>.apk` | Unsigned debug build |
-| `master` stable release | `impstr-release-v<version>.apk` | Signed release build |
+| `master` stable release | `impstr-release-v<version>.aab` | Signed Play App Bundle |
+| `master` stable release | `impstr-release-v<version>.apk` | Signed sideload build |
 
 ### Required secrets
 
 | Secret | Used for |
 |---|---|
-| `SIGNING_KEY`, `ALIAS`, `KEY_STORE_PASSWORD`, `KEY_PASSWORD` | Signing the release APK on `master` |
-| `PLAY_CONSOLE_JSON` | Publishing to the Google Play internal track (`com.knownassurajit.app.game.impstr`). If unset, the Play publish step is skipped as a safe no-op — nothing else in the pipeline is blocked. |
+| `SIGNING_KEY`, `ALIAS`, `KEY_STORE_PASSWORD`, `KEY_PASSWORD` | Signing the release AAB and APK on `master` |
+| `PLAY_CONSOLE_JSON` | Publishing the signed AAB to the Google Play **internal** track for `com.knownassurajit.impstr_game.app`. Release names stay `impstr` (the GitHub repo). The workflow does not change the Play store listing title. If the secret is unset, Play upload is skipped and the GitHub release still publishes. |
+
+`master` is the production branch. Each master build sets `versionCode` to the Gradle formula plus `github.run_number`, so a later merge can upload without editing `build.gradle.kts`. Play rejects a version code that was already used.
+
+Manual republish, without a second upload on every merge, is [`.github/workflows/play-release.yml`](.github/workflows/play-release.yml) (`workflow_dispatch` only).
 
 ---
 

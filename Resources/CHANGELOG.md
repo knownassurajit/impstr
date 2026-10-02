@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Release `applicationId` is `com.knownassurajit.impstr_game.app`, matching the Play Console draft.
+- Merges to `master` build a signed AAB and upload it to the Play internal track when `PLAY_CONSOLE_JSON` is set. Release names stay `impstr`.
+
 ## [2.2.0] - 2026-03-27
 
 ### 🎭 Stealth Mode Update & UI Polish

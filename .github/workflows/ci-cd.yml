@@ -45,6 +45,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Verify Play applicationId
+        run: |
+          # Release identity is the root project (settings.gradle.kts does not include :app).
+          grep -q 'applicationId = "com.knownassurajit.impstr_game.app"' build.gradle.kts
+          grep -q 'packageName: com.knownassurajit.impstr_game.app' .github/workflows/ci-cd.yml
+
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
@@ -108,13 +114,8 @@ jobs:
       - name: Extract Version from Gradle
         id: version
         run: |
-          # Specifically look for the Gradle file containing versionName
-          GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
-
-          if [ -z "$GRADLE_FILE" ]; then
-             # Fallback to any build.gradle.kts
-             GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
-          fi
+          # Root module only. app/build.gradle.kts is not included by settings.gradle.kts.
+          GRADLE_FILE="build.gradle.kts"
           echo "Using Gradle file: $GRADLE_FILE"
 
           VERSION=""
@@ -352,7 +353,25 @@ jobs:
           exit 1
 
   # ─────────────────────────────────────────────
-  # STABLE-RELEASE — master pushes → signed release APK, GitHub Stable Release, Play Console
+  # STABLE-RELEASE — push to master (production branch; this repo has no main)
+  #
+  # Builds and signs:
+  #   - AAB at build/outputs/bundle/release (uploaded to Play)
+  #   - APK at build/outputs/apk/release (GitHub Release sideload)
+  # The Gradle project is the repository root. Do not look under app/.
+  #
+  # Play Console package: com.knownassurajit.impstr_game.app
+  # Release name prefix matches the GitHub repo: impstr
+  # Track: internal
+  # This job does not edit the Play store listing title.
+  #
+  # Secrets (existing names only):
+  #   SIGNING_KEY, ALIAS, KEY_STORE_PASSWORD, KEY_PASSWORD — required to sign
+  #   PLAY_CONSOLE_JSON — service account JSON. When unset, Play upload is skipped
+  #   and the GitHub release still publishes.
+  #
+  # versionCode = gradle formula + github.run_number, so a later master merge
+  # can upload without editing build.gradle.kts. Play rejects a repeated code.
   # ─────────────────────────────────────────────
   stable-release:
     name: Prepare Release, Publish GitHub & Play Console
@@ -362,8 +381,6 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write
-    env:
-      PLAY_CONSOLE_JSON: ${{ secrets.PLAY_CONSOLE_JSON }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -377,40 +394,66 @@ jobs:
           distribution: "temurin"
           cache: gradle
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        with:
+          packages: tools platform-tools platforms;android-36 build-tools;35.0.0
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Run Unit Tests
-        run: ./gradlew testReleaseUnitTest
+        run: ./gradlew testReleaseUnitTest --no-daemon
 
       - name: Run Lint Analysis
-        run: ./gradlew lintRelease
+        run: ./gradlew lintRelease --no-daemon
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
-
-      - name: Find Release APK Directory
-        id: locate
+      - name: Resolve release version
+        id: version
         run: |
-          # Find the directory containing the unsigned release APK for the signing action
-          APK_FILE=$(find . -path "*/apk/release/*.apk" | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find . -name "*.apk" -path "*/build/outputs/*" | grep -i release | head -n 1)
-          fi
-          if [ -z "$APK_FILE" ]; then
-            echo "❌ No release APK found. Listing all APKs:"
-            find . -name "*.apk"
+          GRADLE_FILE="build.gradle.kts"
+          MAJOR=$(grep -E 'val[[:space:]]+major[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          MINOR=$(grep -E 'val[[:space:]]+minor[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          PATCH=$(grep -E 'val[[:space:]]+patch[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          BUILD=$(grep -E 'val[[:space:]]+build[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ] || [ -z "$BUILD" ]; then
+            echo "Could not read major/minor/patch/build from $GRADLE_FILE"
             exit 1
           fi
-          RELEASE_DIR=$(dirname "$APK_FILE")
-          echo "✅ Found release dir: $RELEASE_DIR"
-          echo "dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
+          # Must match versionName in build.gradle.kts: build + ciBuildNumber.
+          EFFECTIVE_BUILD=$((BUILD + ${{ github.run_number }}))
+          VERSION="${MAJOR}.${MINOR}.${PATCH}.${EFFECTIVE_BUILD}"
+          echo "app_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release version $VERSION (ciBuildNumber=${{ github.run_number }})"
 
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407
-        id: sign_app
+      - name: Build release AAB and APK
+        run: ./gradlew bundleRelease assembleRelease --no-daemon -PciBuildNumber=${{ github.run_number }}
+
+      - name: Locate release artifacts
+        id: locate
+        run: |
+          AAB_FILE=$(find build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)
+          APK_FILE=$(find build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)
+          if [ -z "$AAB_FILE" ] || [ ! -f "$AAB_FILE" ]; then
+            echo "Release AAB not found under build/outputs/bundle/release"
+            find build/outputs -name '*.aab' -o -name '*.apk' || true
+            exit 1
+          fi
+          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
+            echo "Release APK not found under build/outputs/apk/release"
+            find build/outputs -name '*.apk' || true
+            exit 1
+          fi
+          echo "aab_dir=$(dirname "$AAB_FILE")" >> "$GITHUB_OUTPUT"
+          echo "apk_dir=$(dirname "$APK_FILE")" >> "$GITHUB_OUTPUT"
+          echo "AAB: $AAB_FILE"
+          echo "APK: $APK_FILE"
+
+      - name: Sign release AAB
+        id: sign_aab
+        uses: r0adkll/sign-android-release@d5f8436b702872ad5cdb1e6e4d5c8b983d25a997
         with:
-          releaseDirectory: ${{ steps.locate.outputs.dir }}
+          releaseDirectory: ${{ steps.locate.outputs.aab_dir }}
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -418,45 +461,21 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "35.0.0"
 
-      - name: Extract Version from Gradle
-        id: version
-        run: |
-          # Specifically look for the Gradle file containing versionName
-          GRADLE_FILE=$(grep -l "versionName" $(find . -maxdepth 3 -name "build.gradle*" ! -path "./build/*") | head -n 1)
+      - name: Sign release APK
+        id: sign_apk
+        uses: r0adkll/sign-android-release@d5f8436b702872ad5cdb1e6e4d5c8b983d25a997
+        with:
+          releaseDirectory: ${{ steps.locate.outputs.apk_dir }}
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "35.0.0"
 
-          if [ -z "$GRADLE_FILE" ]; then
-             # Fallback to any build.gradle.kts
-             GRADLE_FILE=$(find . -maxdepth 3 -name "build.gradle.kts" ! -path "./build/*" | head -n 1)
-          fi
-          echo "Using Gradle file: $GRADLE_FILE"
-
-          VERSION=""
-
-          # Pattern 1: versionName "x.x.x" (Groovy literal string)
-          if grep -q -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE"; then
-            VERSION=$(grep -E 'versionName\s+"[^$][^"]*"' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-
-          # Pattern 2: versionName = "x.x.x" (.kts literal string)
-          elif grep -q -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE"; then
-            VERSION=$(grep -E 'versionName\s*=\s*"[0-9]+\.[0-9]' "$GRADLE_FILE" | head -1 | sed -E 's/.*"([0-9][^"]+)".*/\1/')
-
-          # Pattern 3: val major/minor/patch/build variables (fallback)
-          elif grep -q -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE"; then
-            MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
-            MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
-            PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
-            BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' "$GRADLE_FILE" | head -1 | grep -o -E '[0-9]+')
-            VERSION="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
-          fi
-
-          VERSION=${VERSION#v}
-          if [ -z "$VERSION" ]; then
-            VERSION=$(date +'%Y.%m.%d')
-            echo "⚠️ Could not extract version, using date: $VERSION"
-          fi
-
-          echo "✅ Final version: $VERSION"
-          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Remove temporary keystores
+        if: success()
+        run: rm -f build/outputs/bundle/release/signingKey.jks build/outputs/apk/release/signingKey.jks
 
       - name: Generate Changelog
         id: changelog
@@ -471,26 +490,37 @@ jobs:
           echo "$LOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Rename APK
+      - name: Name release artifacts
         id: rename
         run: |
           VERSION="${{ steps.version.outputs.app_version }}"
-          OLD_APK="${{ steps.sign_app.outputs.signedReleaseFile }}"
-          NEW_NAME="impstr-release-v${VERSION}.apk"
-          if [ -z "$OLD_APK" ] || [ ! -f "$OLD_APK" ]; then
-            echo "❌ Signed APK not found at: $OLD_APK"
-            find . -name "*.apk"
+          SIGNED_AAB="${{ steps.sign_aab.outputs.signedReleaseFile }}"
+          SIGNED_APK="${{ steps.sign_apk.outputs.signedReleaseFile }}"
+          AAB_NAME="impstr-release-v${VERSION}.aab"
+          APK_NAME="impstr-release-v${VERSION}.apk"
+          if [ -z "$SIGNED_AAB" ] || [ ! -f "$SIGNED_AAB" ]; then
+            echo "Signed AAB not found at: $SIGNED_AAB"
+            find build/outputs -name '*.aab' || true
             exit 1
           fi
-          mv "$OLD_APK" "${NEW_NAME}"
-          echo "renamed_apk=${NEW_NAME}" >> $GITHUB_OUTPUT
+          if [ -z "$SIGNED_APK" ] || [ ! -f "$SIGNED_APK" ]; then
+            echo "Signed APK not found at: $SIGNED_APK"
+            find build/outputs -name '*.apk' || true
+            exit 1
+          fi
+          cp "$SIGNED_AAB" "$AAB_NAME"
+          cp "$SIGNED_APK" "$APK_NAME"
+          echo "renamed_aab=$AAB_NAME" >> "$GITHUB_OUTPUT"
+          echo "renamed_apk=$APK_NAME" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Release APK to Artifacts
+      - name: Upload signed release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: success()
         with:
           name: impstr-release-v${{ steps.version.outputs.app_version }}
-          path: ${{ steps.rename.outputs.renamed_apk }}
+          path: |
+            ${{ steps.rename.outputs.renamed_aab }}
+            ${{ steps.rename.outputs.renamed_apk }}
           retention-days: 90
 
       - name: Upload Test & Lint Reports
@@ -505,11 +535,16 @@ jobs:
         if: success()
         uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
         with:
-          files: ${{ steps.rename.outputs.renamed_apk }}
+          files: |
+            ${{ steps.rename.outputs.renamed_aab }}
+            ${{ steps.rename.outputs.renamed_apk }}
           tag_name: v${{ steps.version.outputs.app_version }}+${{ github.run_number }}
-          name: "IMPSTR v${{ steps.version.outputs.app_version }} (Stable Release)"
+          name: "impstr v${{ steps.version.outputs.app_version }} (Stable Release)"
           body: |
-            🚀 **Production Release `v${{ steps.version.outputs.app_version }}`**
+            Production release `v${{ steps.version.outputs.app_version }}` for **impstr**.
+
+            Play package: `com.knownassurajit.impstr_game.app`
+            Play track: internal, when `PLAY_CONSOLE_JSON` is configured.
 
             ## What's Changed
             ${{ steps.changelog.outputs.changelog }}
@@ -524,32 +559,43 @@ jobs:
             | **Triggered by** | @${{ github.actor }} |
 
             ## Installation
-            Download `impstr-release-v${{ steps.version.outputs.app_version }}.apk` below.
-            Enable **Install from unknown sources** on your device if installing outside the Play Store.
+            `impstr-release-v${{ steps.version.outputs.app_version }}.aab` is the Play artifact.
+            `impstr-release-v${{ steps.version.outputs.app_version }}.apk` is the signed sideload build.
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Detect Play Console credentials
+        id: play
+        env:
+          PLAY_CONSOLE_JSON: ${{ secrets.PLAY_CONSOLE_JSON }}
+        run: |
+          # Step env is visible here. A job-level `if: env.PLAY_CONSOLE_JSON != ''`
+          # check is unreliable for a multiline service-account JSON.
+          if [ -n "$PLAY_CONSOLE_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "PLAY_CONSOLE_JSON is unset. Skipping Google Play upload."
+          fi
+
       - name: Generate Play Store Release Notes
-        if: env.PLAY_CONSOLE_JSON != ''
+        if: steps.play.outputs.enabled == 'true'
         run: |
           mkdir -p release_notes/en-US
           cat > release_notes/en-US/default.txt <<EOF
-          Source:
-          version=${{ steps.version.outputs.app_version }}
-          commit=${{ github.sha }}
-          workflow=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          impstr ${{ steps.version.outputs.app_version }}
           EOF
 
-      - name: Publish to Google Play (Internal Track)
-        if: env.PLAY_CONSOLE_JSON != ''
-        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb
+      - name: Publish to Google Play (internal track)
+        if: steps.play.outputs.enabled == 'true'
+        uses: r0adkll/upload-google-play@744d577ff543375f35f60408e13fb32c7caa90ce
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
-          packageName: com.knownassurajit.app.game.impstr
-          releaseFiles: ${{ steps.rename.outputs.renamed_apk }}
+          packageName: com.knownassurajit.impstr_game.app
+          releaseFiles: ${{ steps.rename.outputs.renamed_aab }}
           track: internal
           status: completed
           whatsNewDirectory: release_notes
-          releaseName: impstr-${{ steps.version.outputs.app_version }}+${{ github.run_number }}
+          releaseName: impstr-${{ steps.version.outputs.app_version }}

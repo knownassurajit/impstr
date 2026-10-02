@@ -1,15 +1,24 @@
-name: Play Console & GitHub Release
+name: Play Console manual release
+
+# Automatic Play publishing is ci-cd.yml → stable-release, on push to master.
+# This workflow is manual only so a master merge does not upload a second build.
+#
+# Play Console package: com.knownassurajit.impstr_game.app
+# Release name prefix: impstr (GitHub repo name). Store listing title is not edited.
+# Track: internal
+# Artifacts come from the root Gradle project (build/outputs/...), not app/.
+#
+# Secrets: SIGNING_KEY, ALIAS, KEY_STORE_PASSWORD, KEY_PASSWORD, PLAY_CONSOLE_JSON.
+# Pass ci_build_number higher than the last uploaded version's CI offset
+# (master uses the CI/CD workflow run number).
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
     inputs:
-      rollback_version:
-        description: 'Optional rollback version tag (e.g. v1.0.0)'
-        required: false
-        default: ''
+      ci_build_number:
+        description: 'Offset added to the Gradle versionCode. Must exceed the last Play upload.'
+        required: true
+        type: string
 
 concurrency:
   group: play-release-${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +26,7 @@ concurrency:
 
 jobs:
   release:
-    name: Prepare Release, Publish GitHub & Play Console
+    name: Sign and upload Play internal build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -25,60 +34,63 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
+          cache: gradle
 
-      - name: Extract Version
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        with:
+          packages: tools platform-tools platforms;android-36 build-tools;35.0.0
+
+      - name: Resolve release version
         id: version
         run: |
-          if [ -n "${{ github.event.inputs.rollback_version }}" ]; then
-            VERSION_NAME="${{ github.event.inputs.rollback_version }}"
-            VERSION_CODE=$(date +'%Y%m%d%H')
-          else
-            MAJOR=$(grep -E 'val\s+major\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-            MINOR=$(grep -E 'val\s+minor\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-            PATCH=$(grep -E 'val\s+patch\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-            BUILD=$(grep -E 'val\s+build\s*=\s*[0-9]+' app/build.gradle.kts | head -1 | grep -o -E '[0-9]+')
-            VERSION_NAME="${MAJOR}.${MINOR}.${PATCH}.${BUILD}"
-            VERSION_CODE=$(( MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + BUILD ))
+          if ! [[ "${{ inputs.ci_build_number }}" =~ ^[0-9]+$ ]]; then
+            echo "ci_build_number must be a positive integer"
+            exit 1
           fi
+          GRADLE_FILE="build.gradle.kts"
+          MAJOR=$(grep -E 'val[[:space:]]+major[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          MINOR=$(grep -E 'val[[:space:]]+minor[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          PATCH=$(grep -E 'val[[:space:]]+patch[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          BUILD=$(grep -E 'val[[:space:]]+build[[:space:]]*=' "$GRADLE_FILE" | head -1 | grep -oE '[0-9]+')
+          EFFECTIVE_BUILD=$((BUILD + ${{ inputs.ci_build_number }}))
+          VERSION="${MAJOR}.${MINOR}.${PATCH}.${EFFECTIVE_BUILD}"
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
-          
-          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "shortSha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "versionName=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "shortSha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Create Dedicated Release Branch
-        run: |
-          BRANCH_NAME="release/impstr/${{ steps.version.outputs.versionName }}"
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          if git ls-remote --exit-code --heads origin "$BRANCH_NAME"; then
-            echo "Release branch $BRANCH_NAME exists, checking out."
-            git checkout "$BRANCH_NAME"
-          else
-            echo "Creating dedicated release branch $BRANCH_NAME for safe rollback tracking."
-            git checkout -b "$BRANCH_NAME"
-            git push origin "$BRANCH_NAME"
-          fi
-
-      - name: Build Android App Bundle & APK
+      - name: Build Android App Bundle and APK
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease --no-daemon
+          ./gradlew bundleRelease assembleRelease --no-daemon -PciBuildNumber=${{ inputs.ci_build_number }}
 
-      - name: Sign AAB & APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
+      - name: Locate release artifacts
+        id: locate
+        run: |
+          AAB_FILE=$(find build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)
+          APK_FILE=$(find build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)
+          if [ -z "$AAB_FILE" ] || [ -z "$APK_FILE" ]; then
+            echo "Expected AAB and APK under build/outputs"
+            find build/outputs -name '*.aab' -o -name '*.apk' || true
+            exit 1
+          fi
+          echo "aab_dir=$(dirname "$AAB_FILE")" >> "$GITHUB_OUTPUT"
+          echo "apk_dir=$(dirname "$APK_FILE")" >> "$GITHUB_OUTPUT"
+
+      - name: Sign AAB
+        id: sign_aab
+        uses: r0adkll/sign-android-release@d5f8436b702872ad5cdb1e6e4d5c8b983d25a997
         with:
-          releaseDirectory: app/build/outputs/bundle/release
+          releaseDirectory: ${{ steps.locate.outputs.aab_dir }}
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -86,44 +98,75 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "35.0.0"
 
-      - name: Generate Release Notes
+      - name: Sign APK
+        id: sign_apk
+        uses: r0adkll/sign-android-release@d5f8436b702872ad5cdb1e6e4d5c8b983d25a997
+        with:
+          releaseDirectory: ${{ steps.locate.outputs.apk_dir }}
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "35.0.0"
+
+      - name: Remove temporary keystores
+        if: success()
+        run: rm -f build/outputs/bundle/release/signingKey.jks build/outputs/apk/release/signingKey.jks
+
+      - name: Name release artifacts
+        id: rename
         run: |
-          mkdir -p release_notes/en-US
-          cat > release_notes/en-US/default.txt <<EOF
-          Source:
-          branch=release/impstr/${{ steps.version.outputs.versionName }}
-          commit=${{ github.sha }}
-          workflow=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          EOF
+          VERSION="${{ steps.version.outputs.versionName }}"
+          cp "${{ steps.sign_aab.outputs.signedReleaseFile }}" "impstr-release-v${VERSION}.aab"
+          cp "${{ steps.sign_apk.outputs.signedReleaseFile }}" "impstr-release-v${VERSION}.apk"
+          echo "renamed_aab=impstr-release-v${VERSION}.aab" >> "$GITHUB_OUTPUT"
+          echo "renamed_apk=impstr-release-v${VERSION}.apk" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
         with:
-          tag_name: v${{ steps.version.outputs.versionName }}
-          name: "IMPSTR v${{ steps.version.outputs.versionName }}"
+          tag_name: v${{ steps.version.outputs.versionName }}-manual.${{ github.run_number }}
+          name: "impstr v${{ steps.version.outputs.versionName }}"
           body: |
-            ### Release Summary
-            - **App:** IMPSTR
-            - **Version:** v${{ steps.version.outputs.versionName }}
-            - **Commit:** ${{ github.sha }}
-            - **Release Branch:** `release/impstr/${{ steps.version.outputs.versionName }}`
+            Manual release of **impstr**.
+            Play package: `com.knownassurajit.impstr_game.app`
+            Commit: ${{ github.sha }}
           draft: false
           prerelease: false
           files: |
-            app/build/outputs/apk/release/*.apk
-            ${{ steps.sign_app.outputs.signedReleaseFile }}
+            ${{ steps.rename.outputs.renamed_aab }}
+            ${{ steps.rename.outputs.renamed_apk }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to Google Play (Internal Track)
-        if: env.PLAY_CONSOLE_JSON != ''
+      - name: Detect Play Console credentials
+        id: play
         env:
           PLAY_CONSOLE_JSON: ${{ secrets.PLAY_CONSOLE_JSON }}
-        uses: r0adkll/upload-google-play@v1
+        run: |
+          if [ -n "$PLAY_CONSOLE_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "PLAY_CONSOLE_JSON is unset. Skipping Google Play upload."
+          fi
+
+      - name: Generate Release Notes
+        if: steps.play.outputs.enabled == 'true'
+        run: |
+          mkdir -p release_notes/en-US
+          cat > release_notes/en-US/default.txt <<EOF
+          impstr ${{ steps.version.outputs.versionName }}
+          EOF
+
+      - name: Publish to Google Play (internal track)
+        if: steps.play.outputs.enabled == 'true'
+        uses: r0adkll/upload-google-play@744d577ff543375f35f60408e13fb32c7caa90ce
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
           packageName: com.knownassurajit.impstr_game.app
-          releaseFiles: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          releaseFiles: ${{ steps.rename.outputs.renamed_aab }}
           track: internal
           status: completed
           whatsNewDirectory: release_notes
