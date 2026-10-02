@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Release `applicationId` is `com.knownassurajit.impstr_game.app`, matching the Play Console draft.
+- Merges to `master` build a signed AAB and upload it to the Play internal track when `PLAY_CONSOLE_JSON` is set. Release names stay `impstr`.
+- Release `compileSdk` and `targetSdk` are 36. Base version is 1.1.0.1 (`versionCode` 1010001) plus the CI build offset, above the last shared 1.1.0.0 bundle.
+- `androidx.hilt:hilt-navigation-compose` stays on 1.3.0. 1.4.0 requires compileSdk 37.
+- Gradle wrapper is 9.6.0, the minimum AGP 9.4 can configure. Release builds use AGP's built-in Kotlin, Hilt 2.60.1, KSP 2.3.12, and Kotlin 2.3.21.
+
 ## [2.2.0] - 2026-03-27
 
 ### 🎭 Stealth Mode Update & UI Polish
