@@ -596,7 +596,7 @@ jobs:
 
       - name: Publish to Google Play (internal track)
         if: steps.play.outputs.enabled == 'true'
-        uses: r0adkll/upload-google-play@744d577ff543375f35f60408e13fb32c7caa90ce
+        uses: r0adkll/upload-google-play@a13fb0ea2a7709e4834ad769971ef3df3479ca41
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONSOLE_JSON }}
           packageName: com.knownassurajit.impstr_game.app
